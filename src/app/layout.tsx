@@ -1,7 +1,9 @@
-import "/styles/globals.css";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import "../styles/globals.css";
 
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
+import { SidebarNav } from "@/components/sidebar-nav";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -14,7 +16,14 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${GeistSans.variable}`}>
-      <body>{children}</body>
+      <body>
+        <SidebarProvider>
+          <div className="flex min-h-screen">
+            <SidebarNav />
+            <main className="flex-1 p-8">{children}</main>
+          </div>
+        </SidebarProvider>
+      </body>
     </html>
   );
 }
