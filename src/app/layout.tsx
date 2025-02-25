@@ -20,7 +20,9 @@ export default function RootLayout({
         <SidebarProvider>
           <div className="flex h-screen w-full overflow-hidden">
             <SidebarNav />
-            <main className="flex-1 overflow-auto p-8">{children}</main>
+            <main className="flex-1 overflow-x-auto overflow-y-hidden p-8">
+              {children}
+            </main>
           </div>
         </SidebarProvider>
       </body>
