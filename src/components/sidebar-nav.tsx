@@ -80,7 +80,7 @@ export function SidebarNav() {
         <SidebarHeader className="flex h-36 items-center justify-center pt-14">
           <Link href="/" className="transition-opacity hover:opacity-80">
             <Image
-              width={150}
+              width={200}
               height={43}
               alt="MOMAS/EPAIL Logo"
               src="/logo.png"
@@ -95,7 +95,7 @@ export function SidebarNav() {
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
-                <SidebarMenuItem key={item.href} className="my-4 h-full">
+                <SidebarMenuItem key={item.href} className="my-2 h-full">
                   <SidebarMenuButton
                     asChild
                     className={cn(

@@ -19,11 +19,11 @@ export function DashboardStats() {
       <CardHeader>
         <CardTitle> Statistics</CardTitle>
       </CardHeader>
-      <CardContent className="pt-6">
+      <CardContent className="pt-6 text-2xl">
         <div className="space-y-2">
           <div className="flex justify-between">
             <div className="flex items-center">
-              <Users size={10} />{" "}
+              <Users size={15} />{" "}
               <span className="ml-2 text-muted-foreground">
                 Active Operators:
               </span>
@@ -32,7 +32,7 @@ export function DashboardStats() {
           </div>
           <div className="flex justify-between">
             <div className="flex items-center">
-              <Grid size={10} />
+              <Grid size={15} />
               <span className="ml-2 text-muted-foreground">
                 Active Breakers
               </span>
@@ -41,7 +41,7 @@ export function DashboardStats() {
           </div>
           <div className="flex justify-between">
             <div className="flex items-center">
-              <TriangleAlert size={10} />
+              <TriangleAlert size={15} />
               <span className="ml-2 text-muted-foreground">Alerts</span>
             </div>
             <span className="font-medium">3</span>

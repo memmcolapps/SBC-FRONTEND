@@ -5,7 +5,7 @@ import { RecentActivity } from "@/components/dashboard/recent-activity";
 
 export default function DashboardPage() {
   return (
-    <div className="h-screen w-full space-y-6 p-4">
+    <div className="mb-10 h-screen space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="text-3xl font-bold">Dashboard</CardTitle>
