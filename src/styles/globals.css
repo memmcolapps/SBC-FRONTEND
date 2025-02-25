@@ -10,6 +10,12 @@ body {
   color: #050316;
 }
 
+@media screen and (max-width: 600px) {
+  body {
+    display: none; /* Hide body content on mobile */
+  }
+}
+
 .break-words {
   word-break: break-word !important; /* For normal word breaking */
   overflow-wrap: break-word !important; /* For breaking long words */
