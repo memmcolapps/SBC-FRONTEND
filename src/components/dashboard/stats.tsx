@@ -20,7 +20,7 @@ export function DashboardStats() {
         <CardTitle> Statistics</CardTitle>
       </CardHeader>
       <CardContent className="pt-6 text-2xl">
-        <div className="space-y-2">
+        <div className="space-y-6">
           <div className="flex justify-between">
             <div className="flex items-center">
               <Users size={15} />{" "}
@@ -28,7 +28,7 @@ export function DashboardStats() {
                 Active Operators:
               </span>
             </div>
-            <span className="font-medium">{activeUsers}</span>
+            <span className="">{activeUsers}</span>
           </div>
           <div className="flex justify-between">
             <div className="flex items-center">
@@ -37,15 +37,36 @@ export function DashboardStats() {
                 Active Breakers
               </span>
             </div>
-            <span className="font-medium">{activeBreakers}</span>
+            <span className="">{activeBreakers}</span>
           </div>
           <div className="flex justify-between">
             <div className="flex items-center">
               <TriangleAlert size={15} />
               <span className="ml-2 text-muted-foreground">Alerts</span>
             </div>
-            <span className="font-medium">3</span>
+            <span className="">3</span>
           </div>
+          <div className="flex justify-between">
+            <div className="flex items-center">
+              <TriangleAlert size={15} />
+              <span className="ml-2 text-muted-foreground">Alerts</span>
+            </div>
+            <span className="">3</span>
+          </div>
+          {/* <div className="flex justify-between">
+            <div className="flex items-center">
+              <TriangleAlert size={15} />
+              <span className="ml-2 text-muted-foreground">Alerts</span>
+            </div>
+            <span className="">3</span>
+          </div>
+          <div className="flex justify-between">
+            <div className="flex items-center">
+              <TriangleAlert size={15} />
+              <span className="ml-2 text-muted-foreground">Alerts</span>
+            </div>
+            <span className="">3</span>
+          </div> */}
         </div>
       </CardContent>
     </Card>

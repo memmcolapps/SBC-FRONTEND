@@ -5,7 +5,7 @@ import { RecentActivity } from "@/components/dashboard/recent-activity";
 
 export default function DashboardPage() {
   return (
-    <div className="mb-10 h-screen space-y-6">
+    <div className="mb-10 space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="text-3xl font-bold">Dashboard</CardTitle>
@@ -16,17 +16,17 @@ export default function DashboardPage() {
         <DashboardStats />
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>Breaker Status</CardTitle>
-          </CardHeader>
-          <CardContent></CardContent>
-        </Card>
-        <Card className="md:col-span-3">
-          <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>
           <CardContent>
             <RecentActivity />
           </CardContent>
+        </Card>
+        <Card className="md:col-span-3">
+          <CardHeader>
+            <CardTitle>Breaker Status</CardTitle>
+          </CardHeader>
+          <CardContent></CardContent>
         </Card>
       </div>
     </div>
