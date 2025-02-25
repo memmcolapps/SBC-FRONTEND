@@ -7,13 +7,24 @@ html {
 }
 
 body {
-  /* background-color: #dddbff; */
   color: #050316;
+}
+
+.break-words {
+  word-break: break-word !important; /* For normal word breaking */
+  overflow-wrap: break-word !important; /* For breaking long words */
+  white-space: normal !important; /* Important: Allow wrapping */
+  overflow: wrap !important; /* Important: Allow wrapping */
 }
 
 :root {
   --background: #dddbff;
   --foreground: #ffffff;
+}
+
+svg {
+  height: fit-content !important;
+  width: fit-content !important;
 }
 
 @layer base {
@@ -86,6 +97,10 @@ body {
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+  html,
+  body {
+    height: 100%;
+  }
 }
 
 @layer base {
@@ -104,4 +119,8 @@ body {
   body {
     @apply bg-[#dddbff] text-[#07200B];
   }
+}
+
+::-webkit-scrollbar {
+  width: 0;
 }

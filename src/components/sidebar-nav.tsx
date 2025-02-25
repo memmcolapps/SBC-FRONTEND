@@ -1,8 +1,19 @@
 "use client";
-
-import { Bell, FileText, Grid, Home, Users, LogOut } from "lucide-react";
+import {
+  Bell,
+  FileText,
+  Grid,
+  Home,
+  Users,
+  LogOut,
+  UserRoundPen,
+  LayoutDashboard,
+  UserRound,
+} from "lucide-react";
+import { type LucideIcon } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 import {
   Sidebar,
@@ -13,32 +24,50 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import Image from "next/image";
+import { type ReactElement } from "react";
 
-const navItems = [
+interface NavItem {
+  title: string;
+  href: string;
+  icon: ReactElement<LucideIcon>;
+}
+
+const navItems: NavItem[] = [
   {
     title: "Dashboard",
     href: "/dashboard",
-    icon: Home,
+    icon: <LayoutDashboard size={20} className="shrink-0" />,
   },
   {
-    title: "Organizational \n Management",
+    title: "Organizational Management",
     href: "/organization",
-    icon: Users,
+    icon: <Users size={20} />,
+  },
+  {
+    title: "Operator Management",
+    href: "/operator",
+    icon: <UserRound size={20} />,
   },
   {
     title: "Breaker Management",
     href: "/breakers",
-    icon: Grid,
+    icon: <Grid size={20} />,
   },
   {
     title: "Notifications",
     href: "/notifications",
-    icon: Bell,
+    icon: <Bell size={20} />,
   },
   {
     title: "Audit Logs",
     href: "/audit",
-    icon: FileText,
+    icon: <FileText size={20} />,
+  },
+  {
+    title: "Profile",
+    href: "/profile",
+    icon: <UserRoundPen size={20} />,
   },
 ];
 
@@ -46,30 +75,41 @@ export function SidebarNav() {
   const pathname = usePathname();
 
   return (
-    <div className="h-full bg-[#dddbff]">
-      <Sidebar className="m-10 h-screen bg-[#ffffff]">
-        <SidebarHeader className="flex h-48 items-center justify-center p-4">
-          <div className="p-4 text-xl font-bold">Smart Breaker Controller</div>
+    <Sidebar className="h-screen bg-[#dddbff] p-8">
+      <div className="flex h-full flex-col bg-[#ffffff]">
+        <SidebarHeader className="flex h-36 items-center justify-center pt-14">
+          <Link href="/" className="transition-opacity hover:opacity-80">
+            <Image
+              width={150}
+              height={43}
+              alt="MOMAS/EPAIL Logo"
+              src="/logo.png"
+              className="mx-auto"
+              priority
+              quality={90}
+            />
+          </Link>
         </SidebarHeader>
-        <SidebarContent className="px-4">
+        <SidebarContent className="flex-1 px-4 pt-10">
           <SidebarMenu>
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
-                <SidebarMenuItem key={item.href} className="py-6">
+                <SidebarMenuItem key={item.href} className="my-4 h-full">
                   <SidebarMenuButton
                     asChild
-                    className={`group w-full rounded-lg transition-all duration-200 hover:bg-[#16085F] hover:text-[#ffffff] ${
-                      isActive ? "bg-[#16085F] text-[#ffffff]" : ""
-                    }`}
+                    className={cn(
+                      "group w-full rounded-lg transition-all duration-200 hover:bg-[#16085F] hover:text-[#ffffff]",
+                      isActive ? "bg-[#16085F] text-[#ffffff]" : "",
+                    )}
                   >
                     <Link
                       href={item.href}
-                      className="flex items-center gap-3 px-4 py-3"
+                      className="flex h-full items-center gap-3 px-4 py-3"
                       aria-current={isActive ? "page" : undefined}
                     >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      <span className="text-xl font-medium transition-transform group-hover:translate-x-1">
+                      {item.icon}
+                      <span className="break-words text-xl font-medium transition-transform group-hover:translate-x-1">
                         {item.title}
                       </span>
                     </Link>
@@ -89,7 +129,7 @@ export function SidebarNav() {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
-      </Sidebar>
-    </div>
+      </div>
+    </Sidebar>
   );
 }
