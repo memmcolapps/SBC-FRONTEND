@@ -3,7 +3,6 @@ import {
   Bell,
   FileText,
   Grid,
-  Home,
   Users,
   LogOut,
   UserRoundPen,
