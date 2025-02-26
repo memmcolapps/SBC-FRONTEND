@@ -27,7 +27,7 @@ const auditLogs: AuditLog[] = [
 
 export function AuditLogTable() {
   return (
-    <Table>
+    <Table className="text-xl">
       <TableHeader>
         <TableRow>
           <TableHead>Timestamp</TableHead>

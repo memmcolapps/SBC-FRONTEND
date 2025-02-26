@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-// import { AuditLogFilters } from "@/components/audit/audit-log-filters";
+import { AuditLogFilters } from "@/components/audit/audit-log-filters";
 import { AuditLogTable } from "@/components/audit/audit-log-table";
 
 export default function AuditPage() {
@@ -12,7 +12,7 @@ export default function AuditPage() {
           <CardTitle>Audit Logs</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* <AuditLogFilters /> */}
+          <AuditLogFilters />
           <AuditLogTable />
         </CardContent>
       </Card>

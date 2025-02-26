@@ -76,7 +76,7 @@ export function SidebarNav() {
   return (
     <Sidebar className="h-screen bg-[#dddbff] p-8">
       <div className="flex h-full flex-col bg-[#ffffff]">
-        <SidebarHeader className="flex h-36 items-center justify-center pt-14">
+        <SidebarHeader className="flex items-center justify-center pt-14">
           <Link href="/" className="transition-opacity hover:opacity-80">
             <Image
               width={200}
@@ -94,7 +94,7 @@ export function SidebarNav() {
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
-                <SidebarMenuItem key={item.href} className="my-1 h-full">
+                <SidebarMenuItem key={item.href} className="h-full">
                   <SidebarMenuButton
                     asChild
                     className={cn(
@@ -108,7 +108,7 @@ export function SidebarNav() {
                       aria-current={isActive ? "page" : undefined}
                     >
                       {item.icon}
-                      <span className="break-words text-xl font-medium transition-transform group-hover:translate-x-1">
+                      <span className="break-words text-lg font-medium transition-transform group-hover:translate-x-1">
                         {item.title}
                       </span>
                     </Link>
