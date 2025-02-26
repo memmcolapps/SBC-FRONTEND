@@ -90,12 +90,12 @@ export function SidebarNav() {
             />
           </Link>
         </SidebarHeader>
-        <SidebarContent className="flex-1 px-4 pt-10">
+        <SidebarContent className="flex-1 px-4 pt-8">
           <SidebarMenu>
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
-                <SidebarMenuItem key={item.href} className="my-2 h-full">
+                <SidebarMenuItem key={item.href} className="my-1 h-full">
                   <SidebarMenuButton
                     asChild
                     className={cn(

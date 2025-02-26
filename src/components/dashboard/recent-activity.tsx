@@ -47,7 +47,7 @@ export function RecentActivity() {
           <TableHead>Action</TableHead>
         </TableRow>
       </TableHeader>
-      <TableBody className="text-2xl">
+      <TableBody className="text-xl">
         {recentActivity.map((activity, index) => (
           <TableRow key={index}>
             <TableCell>{activity.time}</TableCell>

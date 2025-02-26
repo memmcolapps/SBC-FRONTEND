@@ -19,9 +19,9 @@ export function DashboardStats() {
       <CardHeader>
         <CardTitle> Statistics</CardTitle>
       </CardHeader>
-      <CardContent className="pt-6 text-2xl">
-        <div className="space-y-6">
-          <div className="flex justify-between">
+      <CardContent className="pt-6 text-xl">
+        <div className="space-y-7">
+          <div className="mr-10 flex justify-between">
             <div className="flex items-center">
               <Users size={15} />{" "}
               <span className="ml-2 text-muted-foreground">
@@ -30,7 +30,7 @@ export function DashboardStats() {
             </div>
             <span className="">{activeUsers}</span>
           </div>
-          <div className="flex justify-between">
+          <div className="mr-10 flex justify-between">
             <div className="flex items-center">
               <Grid size={15} />
               <span className="ml-2 text-muted-foreground">
@@ -39,34 +39,13 @@ export function DashboardStats() {
             </div>
             <span className="">{activeBreakers}</span>
           </div>
-          <div className="flex justify-between">
+          <div className="mr-10 flex justify-between">
             <div className="flex items-center">
               <TriangleAlert size={15} />
               <span className="ml-2 text-muted-foreground">Alerts</span>
             </div>
             <span className="">3</span>
           </div>
-          <div className="flex justify-between">
-            <div className="flex items-center">
-              <TriangleAlert size={15} />
-              <span className="ml-2 text-muted-foreground">Alerts</span>
-            </div>
-            <span className="">3</span>
-          </div>
-          {/* <div className="flex justify-between">
-            <div className="flex items-center">
-              <TriangleAlert size={15} />
-              <span className="ml-2 text-muted-foreground">Alerts</span>
-            </div>
-            <span className="">3</span>
-          </div>
-          <div className="flex justify-between">
-            <div className="flex items-center">
-              <TriangleAlert size={15} />
-              <span className="ml-2 text-muted-foreground">Alerts</span>
-            </div>
-            <span className="">3</span>
-          </div> */}
         </div>
       </CardContent>
     </Card>
