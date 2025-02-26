@@ -29,7 +29,7 @@ const data = [
 
 const BreakerChart = () => {
   return (
-    <ResponsiveContainer width="100%" height={250} className="text-sm">
+    <ResponsiveContainer width="100%" height={300} className="text-sm">
       <BarChart
         data={data}
         margin={{ top: 20, right: 30, left: 20, bottom: 5 }}

@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 html {
-  font-size: min(20px, 0.9vw);
+  font-size: min(18px, 0.9vw);
 }
 
 body {
