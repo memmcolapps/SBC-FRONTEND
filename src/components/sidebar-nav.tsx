@@ -45,7 +45,7 @@ const navItems: NavItem[] = [
   },
   {
     title: "Operator Management",
-    href: "/operator",
+    href: "/operators",
     icon: <UserRound size={20} />,
   },
   {

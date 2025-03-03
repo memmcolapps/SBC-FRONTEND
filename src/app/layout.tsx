@@ -4,6 +4,7 @@ import "../styles/globals.css";
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
 import { SidebarNav } from "@/components/sidebar-nav";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "Smart Breaker Controller",
@@ -21,6 +22,7 @@ export default function RootLayout({
           <div className="flex h-screen w-full overflow-hidden">
             <SidebarNav />
             <main className="flex-1 overflow-auto p-8">{children}</main>
+            <Toaster />
           </div>
         </SidebarProvider>
       </body>
