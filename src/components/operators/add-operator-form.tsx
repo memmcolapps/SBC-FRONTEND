@@ -162,7 +162,9 @@ export function AddOperatorForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="firstName">First Name</Label>
+          <Label htmlFor="firstName" className="text-xl">
+            First Name
+          </Label>
           <Input
             id="firstName"
             value={formData.firstName}
@@ -170,10 +172,13 @@ export function AddOperatorForm() {
               setFormData((prev) => ({ ...prev, firstName: e.target.value }))
             }
             required
+            className="text-lg"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="lastName">Last Name</Label>
+          <Label htmlFor="lastName" className="text-xl">
+            Last Name
+          </Label>
           <Input
             id="lastName"
             value={formData.lastName}
@@ -181,12 +186,15 @@ export function AddOperatorForm() {
               setFormData((prev) => ({ ...prev, lastName: e.target.value }))
             }
             required
+            className="text-lg"
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email" className="text-xl">
+          Email
+        </Label>
         <Input
           id="email"
           type="email"
@@ -195,12 +203,13 @@ export function AddOperatorForm() {
             setFormData((prev) => ({ ...prev, email: e.target.value }))
           }
           required
+          className="text-lg"
         />
       </div>
 
       <div className="space-y-2">
         <div className="flex items-center">
-          <Label>Position in Organization</Label>
+          <Label className="text-xl">Position in Organization</Label>
           <FolderTree className="ml-2 h-4 w-4 text-gray-500" size={10} />
         </div>
 
@@ -216,7 +225,9 @@ export function AddOperatorForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password">Default Password</Label>
+        <Label htmlFor="password" className="text-xl">
+          Default Password
+        </Label>
         <Input
           id="password"
           type="password"
@@ -225,11 +236,14 @@ export function AddOperatorForm() {
             setFormData((prev) => ({ ...prev, password: e.target.value }))
           }
           required
+          className="text-lg"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="contact">Contact</Label>
+        <Label htmlFor="contact" className="text-xl">
+          Contact
+        </Label>
         <Input
           id="contact"
           value={formData.contact}
@@ -237,18 +251,21 @@ export function AddOperatorForm() {
             setFormData((prev) => ({ ...prev, contact: e.target.value }))
           }
           required
+          className="text-lg"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="adminRole">Admin Role</Label>
+        <Label htmlFor="adminRole" className="text-xl">
+          Admin Role
+        </Label>
         <Select
           value={formData.adminRole}
           onValueChange={(value) =>
             setFormData((prev) => ({ ...prev, adminRole: value }))
           }
         >
-          <SelectTrigger id="adminRole">
+          <SelectTrigger id="adminRole" className="text-lg">
             <SelectValue placeholder="Select admin role" />
           </SelectTrigger>
           <SelectContent>
@@ -262,14 +279,16 @@ export function AddOperatorForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="permissions">Permissions</Label>
+        <Label htmlFor="permissions" className="text-xl">
+          Permissions
+        </Label>
         <Select
           value={formData.permissions}
           onValueChange={(value) =>
             setFormData((prev) => ({ ...prev, permissions: value }))
           }
         >
-          <SelectTrigger id="permissions">
+          <SelectTrigger id="permissions" className="text-lg">
             <SelectValue placeholder="Select permissions" />
           </SelectTrigger>
           <SelectContent>
