@@ -170,9 +170,6 @@ export function BreakerManagementTable() {
               <div>{breaker.status}</div>
               <div>{breaker.assignedUser}</div>
               <div>{breaker.lastAction}</div>
-              <div onClick={(e) => e.stopPropagation()}>
-                <Button variant="outline">Toggle</Button>
-              </div>
             </div>
 
             {breaker.isExpanded && (

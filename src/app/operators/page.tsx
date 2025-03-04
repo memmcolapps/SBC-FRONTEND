@@ -5,7 +5,13 @@ import { OperatorManagementTable } from "@/components/operators/operator-managem
 export default function OperatorsPage() {
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Operator Management</h1>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-3xl font-bold">
+            Operator Management
+          </CardTitle>
+        </CardHeader>
+      </Card>
 
       <Card>
         <CardHeader>

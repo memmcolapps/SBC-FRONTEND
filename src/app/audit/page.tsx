@@ -5,7 +5,11 @@ import { AuditLogTable } from "@/components/audit/audit-log-table";
 export default function AuditPage() {
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Audit Logs</h1>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-3xl font-bold">Audit Logs</CardTitle>
+        </CardHeader>
+      </Card>
 
       <Card>
         <CardHeader>

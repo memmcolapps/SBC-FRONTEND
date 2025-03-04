@@ -5,7 +5,13 @@ import { BreakerManagementTable } from "@/components/breakers/breaker-management
 export default function BreakersPage() {
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Breaker Management</h1>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-3xl font-bold">
+            Breaker Management
+          </CardTitle>
+        </CardHeader>
+      </Card>
 
       <Card>
         <CardHeader>
