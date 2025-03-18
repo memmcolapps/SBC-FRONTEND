@@ -1,10 +1,9 @@
-import { SidebarProvider } from "@/components/ui/sidebar";
 import "../styles/globals.css";
 
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
-import { SidebarNav } from "@/components/sidebar-nav";
 import { Toaster } from "sonner";
+import { AuthProvider } from "@/context/auth-context";
 
 export const metadata: Metadata = {
   title: "Smart Breaker Controller",
@@ -18,13 +17,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${GeistSans.variable}`}>
       <body>
-        <SidebarProvider>
-          <div className="flex h-screen w-full overflow-hidden">
-            <SidebarNav />
-            <main className="flex-1 overflow-auto p-8">{children}</main>
-            <Toaster />
-          </div>
-        </SidebarProvider>
+        <AuthProvider>
+          {children}
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );

@@ -13,6 +13,7 @@ import { type LucideIcon } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/auth-context";
 
 import {
   Sidebar,
@@ -72,6 +73,7 @@ const navItems: NavItem[] = [
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const { logout } = useAuth();
 
   return (
     <Sidebar className="h-screen bg-[#dddbff] p-8">
@@ -121,7 +123,10 @@ export function SidebarNav() {
         <SidebarFooter className="border-t">
           <SidebarMenu>
             <SidebarMenuItem className="my-6">
-              <SidebarMenuButton className="text-red-600 hover:bg-red-100 hover:text-red-700">
+              <SidebarMenuButton
+                className="text-red-600 hover:bg-red-100 hover:text-red-700"
+                onClick={logout}
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
               </SidebarMenuButton>
