@@ -1,4 +1,4 @@
-import axios, { AxiosError } from "axios";
+import axios, { type AxiosError } from "axios";
 import { env } from "@/env";
 
 const AUTH_API_URL = env.NEXT_PUBLIC_BASE_URL;
@@ -42,15 +42,14 @@ export async function loginApi(
   password: string,
 ): Promise<LoginResponseData> {
   try {
+    const formData = new FormData();
+    formData.append("username", email);
+    formData.append("password", password);
     const response = await axios.post<LoginResponse>(
-      `${AUTH_API_URL}/login`,
-      {
-        username: email,
-        password,
-      },
+      `${AUTH_API_URL}/authentication/api/admin/login`,
+      formData,
       {
         headers: {
-          "Content-Type": "application/json",
           custom: CUSTOM_HEADER,
         },
       },

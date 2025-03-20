@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
+// audit-log-filters.tsx
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface DatePickerProps {
   id: string;
@@ -67,15 +67,21 @@ export function DatePicker({
   );
 }
 
-export function AuditLogFilters() {
-  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
-  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+interface AuditLogFiltersProps {
+  dateFrom: Date | undefined;
+  setDateFrom: (date: Date | undefined) => void;
+  dateTo: Date | undefined;
+  setDateTo: (date: Date | undefined) => void;
+  onExport: () => void;
+}
 
-  const handleExport = () => {
-    // Implement your export logic here
-    console.log("Exporting logs...");
-  };
-
+export function AuditLogFilters({
+  dateFrom,
+  setDateFrom,
+  dateTo,
+  setDateTo,
+  onExport,
+}: AuditLogFiltersProps) {
   return (
     <div className="mb-4 flex items-center justify-between p-4">
       <div className="flex gap-8">
@@ -94,7 +100,7 @@ export function AuditLogFilters() {
           onClear={() => setDateTo(undefined)}
         />
       </div>
-      <Button onClick={handleExport}>Export Logs</Button>
+      <Button onClick={onExport}>Export Logs</Button>
     </div>
   );
 }
