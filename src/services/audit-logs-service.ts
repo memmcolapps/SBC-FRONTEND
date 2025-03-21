@@ -58,24 +58,26 @@ export async function fetchAuditLogs(
 ): Promise<AuditLogsResponseData> {
   try {
     // Create URLSearchParams for form data
-    const formData = new URLSearchParams();
-    formData.append("page", page.toString());
-    formData.append("size", size.toString());
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("size", size.toString());
 
-    // if (dateFrom) {
-    //   formData.append("dateFrom", dateFrom.toISOString().split("T")[0]);
-    // }
-    // if (dateTo) {
-    //   formData.append("dateTo", dateTo.toISOString().split("T")[0]);
-    // }
+    // Add dates only if they are defined
+    if (dateFrom) {
+      params.append("startDate", dateFrom.toISOString().substring(0, 10));
+    }
+    if (dateTo) {
+      params.append("endDate", dateTo.toISOString().substring(0, 10));
+    }
 
     const response = await axios.get<AuditLogsResponse>(
-      `${AUDIT_LOGS_API_URL}/organization/api/audit/logs?page=${page}&size=${size}`,
+      `${AUDIT_LOGS_API_URL}/organization/api/audit/logs`,
       {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
           Authorization: `Bearer ${token}`,
         },
+        params: params,
       },
     );
 
