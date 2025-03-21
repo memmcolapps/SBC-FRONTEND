@@ -68,3 +68,31 @@ export interface Operator {
   status: "Active" | "Inactive";
   assignedSBCs: string[];
 }
+
+// types.ts
+// export interface DashboardData {
+//   totalBreakers: number;
+//   totalOperators: number;
+//   totalActiveOperators: number;
+//   totalInactiveOperators: number;
+//   recentActivity: {
+//     time: string;
+//     user: string;
+//     action: string;
+//   }[];
+// }
+
+// types.ts
+export interface RecentActivityItem {
+  description: string;
+  createdAt: string;
+  user: string;
+}
+
+export interface DashboardData {
+  totalBreakers: number;
+  totalOperators: number;
+  totalActiveOperators: number;
+  totalInactiveOperators: number;
+  recentActivity: RecentActivityItem[];
+}
