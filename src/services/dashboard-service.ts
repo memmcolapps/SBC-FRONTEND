@@ -1,8 +1,8 @@
 // services/dashboard-service.ts
 import axios from "axios";
+import { env } from "@/env";
 
-const DASHBOARD_API_URL =
-  "https://api-gateway-service-production-8999.up.railway.app/smarte/organization/operator/api/dashboard";
+const DASHBOARD_API_URL = env.NEXT_PUBLIC_BASE_URL;
 
 export interface RecentActivityItem {
   description: string;
@@ -42,11 +42,14 @@ export async function fetchDashboardData(
   token: string,
 ): Promise<DashboardData> {
   try {
-    const response = await axios.get<DashboardResponse>(DASHBOARD_API_URL, {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const response = await axios.get<DashboardResponse>(
+      `${DASHBOARD_API_URL}/organization/operator/api/dashboard`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
+    );
 
     if (response.data.responsecode !== "000") {
       throw new Error(response.data.responsedesc);
