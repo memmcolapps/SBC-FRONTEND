@@ -1,22 +1,32 @@
+// src/components/organization/org-tree.tsx
 "use client";
 
-import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronRight, ChevronDown, Plus, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/context/auth-context";
+import {
+  fetchOrganizationTree,
+  saveOrganizationTree,
+  addOrganizationNode,
+  deleteOrganizationNode,
+  updateOrganizationNodes,
+} from "@/services/organization-service";
+import type { OrganizationNode } from "@/types";
 
 interface TreeNode {
-  id: string;
+  id: number;
   name: string;
+  parent_id: number | null;
   children: TreeNode[];
 }
 
 interface TreeNodeProps {
   node: TreeNode;
-  onAddChild: (parentId: string) => void;
-  onDelete: (id: string) => void;
-  onRename: (id: string, newName: string) => void;
+  onAddChild: (parentId: number) => Promise<void>;
+  onDelete: (id: number) => Promise<void>;
+  onRename: (id: number, newName: string) => Promise<void>;
 }
 
 const TreeNode: React.FC<TreeNodeProps> = ({
@@ -31,9 +41,14 @@ const TreeNode: React.FC<TreeNodeProps> = ({
 
   const handleToggle = () => setIsExpanded(!isExpanded);
 
-  const handleRename = () => {
-    onRename(node.id, newName);
-    setIsEditing(false);
+  const handleRename = async () => {
+    try {
+      await onRename(node.id, newName);
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error renaming node:", error);
+      setNewName(node.name);
+    }
   };
 
   return (
@@ -55,16 +70,34 @@ const TreeNode: React.FC<TreeNodeProps> = ({
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onBlur={handleRename}
-            onKeyPress={(e) => e.key === "Enter" && handleRename()}
+            onKeyDown={(e) => e.key === "Enter" && handleRename()}
             className="w-40"
+            autoFocus
           />
         ) : (
-          <span onClick={() => setIsEditing(true)}>{node.name}</span>
+          <span
+            onClick={() => setIsEditing(true)}
+            className="cursor-pointer rounded px-2 py-1 hover:bg-gray-100"
+          >
+            {node.name}
+          </span>
         )}
-        <Button variant="ghost" size="sm" onClick={() => onAddChild(node.id)}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onAddChild(node.id)}
+          disabled={isEditing}
+          aria-label="Add child node"
+        >
           <Plus className="h-4 w-4" size={10} />
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => onDelete(node.id)}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onDelete(node.id)}
+          disabled={isEditing}
+          aria-label="Delete node"
+        >
           <Trash className="h-4 w-4" size={10} />
         </Button>
       </div>
@@ -86,72 +119,330 @@ const TreeNode: React.FC<TreeNodeProps> = ({
 };
 
 export const OrgTree: React.FC = () => {
+  const { getAccessToken } = useAuth();
   const [tree, setTree] = useState<TreeNode>({
-    id: "1",
+    id: 1,
     name: "Root User",
+    parent_id: null,
     children: [],
   });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const generateId = () => Math.random().toString(36).substr(2, 9);
+  // Helper functions for tree manipulation
+  const addChildToTree = (
+    node: TreeNode,
+    parentId: number,
+    newNode: TreeNode,
+  ): TreeNode => {
+    if (node.id === parentId) {
+      return { ...node, children: [...node.children, newNode] };
+    }
+    return {
+      ...node,
+      children: node.children.map((child) =>
+        addChildToTree(child, parentId, newNode),
+      ),
+    };
+  };
 
-  const addChild = (parentId: string) => {
+  const deleteFromTree = (node: TreeNode, id: number): TreeNode | null => {
+    if (node.id === id) {
+      return null;
+    }
+    return {
+      ...node,
+      children: node.children
+        .map((child) => deleteFromTree(child, id))
+        .filter(Boolean) as TreeNode[],
+    };
+  };
+
+  const renameInTree = (
+    node: TreeNode,
+    id: number,
+    newName: string,
+  ): TreeNode => {
+    if (node.id === id) {
+      return { ...node, name: newName };
+    }
+    return {
+      ...node,
+      children: node.children.map((child) => renameInTree(child, id, newName)),
+    };
+  };
+
+  const updateNodeIdInTree = (
+    node: TreeNode,
+    oldId: number,
+    newId: number,
+  ): TreeNode => {
+    if (node.id === oldId) {
+      return { ...node, id: newId };
+    }
+    return {
+      ...node,
+      children: node.children.map((child) =>
+        updateNodeIdInTree(child, oldId, newId),
+      ),
+    };
+  };
+
+  const convertApiTreeToComponentTree = (
+    apiNodes: OrganizationNode[],
+  ): TreeNode[] => {
+    return apiNodes.map((node) => ({
+      id: node.id,
+      name: node.name,
+      parent_id: node.parent_id,
+      children: node.nodes ? convertApiTreeToComponentTree(node.nodes) : [],
+    }));
+  };
+
+  const convertComponentTreeToApiTree = (node: TreeNode): OrganizationNode => {
+    return {
+      id: node.id,
+      name: node.name,
+      parent_id: node.parent_id,
+      nodes:
+        node.children.length > 0
+          ? node.children.map(convertComponentTreeToApiTree)
+          : [],
+    };
+  };
+
+  const saveTree = async (updatedTree: TreeNode) => {
+    const token = getAccessToken();
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    try {
+      const apiTree = convertComponentTreeToApiTree(updatedTree);
+      await saveOrganizationTree(apiTree, token);
+    } catch (error) {
+      console.error("Failed to save organization tree:", error);
+      throw error;
+    }
+  };
+
+  const addChild = async (parentId: number) => {
+    const token = getAccessToken();
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    const tempId = Date.now();
     const newNode: TreeNode = {
-      id: generateId(),
-      name: "New User",
+      id: tempId,
+      name: "New Node",
+      parent_id: parentId,
       children: [],
     };
 
-    const addChildToNode = (node: TreeNode): TreeNode => {
-      if (node.id === parentId) {
-        return { ...node, children: [...node.children, newNode] };
-      }
-      return {
-        ...node,
-        children: node.children.map(addChildToNode),
-      };
-    };
+    try {
+      // Optimistic update
+      const updatedTree = addChildToTree(tree, parentId, newNode);
+      setTree(updatedTree);
 
-    setTree(addChildToNode(tree));
+      // Create proper payload that matches OrganizationNode without id
+      const newNodePayload: Omit<OrganizationNode, "id"> = {
+        name: newNode.name,
+        parent_id: newNode.parent_id,
+        nodes: [],
+      };
+
+      // Save to server
+      const savedNode = await addOrganizationNode(
+        parentId,
+        newNodePayload,
+        token,
+      );
+
+      // Update with server-generated ID
+      const finalTree = updateNodeIdInTree(updatedTree, tempId, savedNode.id);
+      setTree(finalTree);
+      await saveTree(finalTree);
+    } catch (error) {
+      console.error("Failed to add node:", error);
+      setTree(tree);
+      throw error;
+    }
   };
 
-  const deleteNode = (id: string) => {
-    const deleteFromNode = (node: TreeNode): TreeNode | null => {
-      if (node.id === id) {
-        return null;
-      }
-      return {
-        ...node,
-        children: node.children
-          .map(deleteFromNode)
-          .filter(Boolean) as TreeNode[],
-      };
-    };
+  const deleteNode = async (id: number) => {
+    const token = getAccessToken();
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
 
-    setTree(deleteFromNode(tree) ?? tree);
+    try {
+      // Optimistic update
+      const updatedTree = deleteFromTree(tree, id);
+      if (updatedTree) {
+        setTree(updatedTree);
+        await deleteOrganizationNode(id, token);
+      }
+    } catch (error) {
+      console.error("Failed to delete node:", error);
+      setTree(tree);
+      throw error;
+    }
   };
 
-  const renameNode = (id: string, newName: string) => {
-    const renameInNode = (node: TreeNode): TreeNode => {
-      if (node.id === id) {
-        return { ...node, name: newName };
+  // Update the renameNode function to handle bulk updates
+  const renameNode = async (id: number, newName: string) => {
+    const token = getAccessToken();
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    try {
+      // Optimistic update
+      const updatedTree = renameInTree(tree, id, newName);
+      setTree(updatedTree);
+
+      // Prepare the update payload
+      const nodeToUpdate = findNodeInTree(updatedTree, id);
+      if (!nodeToUpdate) {
+        throw new Error("Node not found in tree");
       }
-      return {
-        ...node,
-        children: node.children.map(renameInNode),
-      };
+
+      const updatePayload: OrganizationNode[] = [
+        {
+          id: nodeToUpdate.id,
+          name: newName,
+          parent_id: nodeToUpdate.parent_id,
+          nodes: nodeToUpdate.children.map((child) => ({
+            id: child.id,
+            name: child.name,
+            parent_id: child.parent_id,
+            nodes: [], // Only include direct children if needed
+          })),
+        },
+      ];
+
+      await updateOrganizationNodes(updatePayload, token);
+    } catch (error) {
+      console.error("Failed to rename node:", error);
+      setTree(tree);
+      throw error;
+    }
+  };
+
+  // Helper function to find a node in the tree
+  const findNodeInTree = (node: TreeNode, id: number): TreeNode | null => {
+    if (node.id === id) {
+      return node;
+    }
+    for (const child of node.children) {
+      const found = findNodeInTree(child, id);
+      if (found) {
+        return found;
+      }
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    const fetchTree = async () => {
+      const token = getAccessToken();
+      try {
+        if (!token) {
+          window.location.href = "/login";
+          return;
+        }
+
+        const response = await fetchOrganizationTree(token);
+
+        if (!response || !Array.isArray(response)) {
+          throw new Error("Invalid organization tree structure");
+        }
+
+        const convertedNodes = convertApiTreeToComponentTree(response);
+
+        // Find or create root node
+        let rootNode = convertedNodes.find((node) => node.parent_id === null);
+        if (!rootNode) {
+          rootNode = {
+            id: 1,
+            name: "Root User",
+            parent_id: null,
+            children: convertedNodes,
+          };
+        }
+
+        setTree(rootNode);
+        setError(null);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : "Failed to load organization tree";
+        setError(errorMessage);
+
+        // Set a default empty tree structure
+        setTree({
+          id: 1,
+          name: "Root User",
+          parent_id: null,
+          children: [],
+        });
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    setTree(renameInNode(tree));
-  };
+    void fetchTree();
+  }, [getAccessToken]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-4">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
+        <span className="ml-2">Loading organization tree...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-md border border-red-200 bg-red-50 p-4">
+        <h3 className="font-medium text-red-800">
+          Error loading organization tree
+        </h3>
+        <p className="mt-1 text-red-600">{error}</p>
+        <Button
+          variant="outline"
+          className="mt-2"
+          onClick={() => window.location.reload()}
+        >
+          Retry
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4">
-      <TreeNode
-        node={tree}
-        onAddChild={addChild}
-        onDelete={deleteNode}
-        onRename={renameNode}
-      />
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold">Organization Hierarchy</h2>
+        <p className="text-sm text-gray-500">
+          Manage your organization structure
+        </p>
+      </div>
+      <div className="rounded-lg border bg-white p-4 shadow-sm">
+        <TreeNode
+          node={tree}
+          onAddChild={addChild}
+          onDelete={deleteNode}
+          onRename={renameNode}
+        />
+      </div>
     </div>
   );
 };

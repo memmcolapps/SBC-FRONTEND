@@ -96,3 +96,30 @@ export interface DashboardData {
   totalInactiveOperators: number;
   recentActivity: RecentActivityItem[];
 }
+
+// src/types/organization.ts
+export interface OrganizationNodeResponse {
+  responsecode: string;
+  responsedesc: string;
+  responsedata: {
+    node: OrganizationNode;
+  };
+}
+
+export interface OrganizationErrorResponse {
+  responsecode: string;
+  responsedesc: string;
+}
+
+export interface OrganizationNode {
+  id: number;
+  name: string;
+  parent_id: number | null;
+  nodes: OrganizationNode[];
+}
+
+export interface OrganizationTreeResponse {
+  responsecode: string;
+  responsedesc: string;
+  responsedata: OrganizationNode;
+}
