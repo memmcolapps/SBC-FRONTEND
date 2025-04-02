@@ -12,7 +12,7 @@ const ORGANIZATION_API_URL = `${env.NEXT_PUBLIC_BASE_URL}/organization/api`;
 
 export async function fetchOrganizationTree(
   token: string,
-): Promise<OrganizationNode> {
+): Promise<OrganizationNode[]> {
   try {
     const response = await axios.get<OrganizationTreeResponse>(
       `${ORGANIZATION_API_URL}/get-nodes`,
@@ -29,6 +29,10 @@ export async function fetchOrganizationTree(
       );
     }
 
+    if (!response.data.responsedata) {
+      throw new Error("Invalid organization tree response");
+    }
+
     return response.data.responsedata;
   } catch (error: unknown) {
     handleOrganizationError(error);
@@ -38,7 +42,7 @@ export async function fetchOrganizationTree(
 export async function saveOrganizationTree(
   treeData: OrganizationNode,
   token: string,
-): Promise<OrganizationNode> {
+): Promise<OrganizationNode[]> {
   try {
     const response = await axios.post<OrganizationTreeResponse>(
       `${ORGANIZATION_API_URL}/create-nodes`,

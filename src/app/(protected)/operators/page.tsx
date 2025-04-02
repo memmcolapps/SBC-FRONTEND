@@ -1,3 +1,4 @@
+// src/app/operators/page.tsx
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddOperatorForm } from "@/components/operators/add-operator-form";
 import { OperatorManagementTable } from "@/components/operators/operator-management-table";

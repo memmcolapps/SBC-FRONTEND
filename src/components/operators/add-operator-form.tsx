@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
+// src/components/operators/add-operator-form.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,69 +17,63 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Check, FolderTree } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Check,
+  FolderTree,
+  Loader2,
+} from "lucide-react";
+import { useAuth } from "@/context/auth-context";
+import { createOperator } from "@/services/operator-service";
+import { fetchOrganizationTree } from "@/services/organization-service";
+import { type OrganizationNode } from "@/types";
 
-interface FormData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  position: string;
-  positionPath: string; // Store the full path for display
-  password: string;
-  contact: string;
-  adminRole: string;
-  permissions: string;
-}
-
-interface PositionNode {
-  id: string;
-  label: string;
-  children?: PositionNode[];
-}
-
-// Define the position hierarchy
-const positionTree: PositionNode[] = [
-  {
-    id: "operator",
-    label: "Operator",
-    children: [
-      { id: "bhub-1", label: "Bhub 1" },
-      { id: "bhub-2", label: "Bhub 2" },
-    ],
-  },
-  {
-    id: "operator-2",
-    label: "Operator 2",
-  },
-  {
-    id: "underground-operator",
-    label: "Underground Operator",
-    children: [
-      { id: "bhub-3", label: "Bhub 3" },
-      { id: "bhub-4", label: "Bhub 4" },
-    ],
-  },
-];
-
-const adminRoles = ["Admin", "Super Admin", "Regular"];
-const permissionLevels = ["Level 1", "Level 2", "Level 3"];
+const roles = ["ROLE_READ", "ROLE_WRITE", "ROLE_ADMIN"];
 
 export function AddOperatorForm() {
-  const [formData, setFormData] = useState<FormData>({
+  const { getAccessToken } = useAuth();
+  const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
-    position: "",
-    positionPath: "",
-    password: "",
+    hierarchy: "", // Now storing hierarchy directly
+    positionName: "", // For display only
+    password: "Passw0rd",
     contact: "",
-    adminRole: "",
-    permissions: "",
+    role: "ROLE_READ",
   });
-
+  const [organizationTree, setOrganizationTree] = useState<OrganizationNode[]>(
+    [],
+  );
+  const [loadingTree, setLoadingTree] = useState(true);
+  const [treeError, setTreeError] = useState<string | null>(null);
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>(
     {},
   );
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  useEffect(() => {
+    const loadOrganizationTree = async () => {
+      try {
+        const token = getAccessToken();
+        if (!token) return;
+
+        const tree = await fetchOrganizationTree(token);
+        setOrganizationTree(tree);
+      } catch (err) {
+        console.error("Failed to load organization tree:", err);
+        setTreeError("Failed to load organization positions");
+      } finally {
+        setLoadingTree(false);
+      }
+    };
+
+    void loadOrganizationTree();
+  }, [getAccessToken]);
 
   const toggleCategory = (id: string) => {
     setOpenCategories((prev) => ({
@@ -89,28 +82,100 @@ export function AddOperatorForm() {
     }));
   };
 
-  const selectPosition = (id: string, path: string) => {
+  const selectPosition = (hierarchy: number, name: string) => {
     setFormData((prev) => ({
       ...prev,
-      position: id,
-      positionPath: path,
+      hierarchy: hierarchy.toString(),
+      positionName: name,
     }));
   };
 
-  const renderPositionTree = (nodes: PositionNode[], currentPath = "") => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitError(null);
+    setSubmitSuccess(false);
+
+    try {
+      const token = getAccessToken();
+      if (!token) throw new Error("Authentication required");
+
+      await createOperator(
+        {
+          operator: {
+            firstname: formData.firstName,
+            lastname: formData.lastName,
+            email: formData.email,
+            passwordEncrypt: formData.password,
+            contact: formData.contact,
+            hierarchy: Number(formData.hierarchy), // Send hierarchy directly
+          },
+          role: {
+            operatorRole: formData.role,
+          },
+        },
+        token,
+      );
+
+      setSubmitSuccess(true);
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        hierarchy: "",
+        positionName: "",
+        password: "Passw0rd",
+        contact: "",
+        role: "ROLE_READ",
+      });
+    } catch (error) {
+      console.error("Error creating operator:", error);
+      setSubmitError(
+        error instanceof Error ? error.message : "Failed to create operator",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const renderPositionTree = (nodes: OrganizationNode[]) => {
+    if (loadingTree) {
+      return (
+        <div className="flex items-center justify-center p-4">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span className="ml-2">Loading positions...</span>
+        </div>
+      );
+    }
+
+    if (treeError) {
+      return (
+        <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+          {treeError}
+        </div>
+      );
+    }
+
+    if (nodes.length === 0) {
+      return (
+        <div className="p-3 text-sm text-gray-500">No positions available</div>
+      );
+    }
+
     return nodes.map((node) => {
-      const hasChildren = node.children && node.children.length > 0;
-      const path = currentPath ? `${currentPath} > ${node.label}` : node.label;
-      const isSelected = formData.position === node.id;
+      const hasChildren = node.nodes && node.nodes.length > 0;
+      const isSelected = formData.hierarchy === node.id.toString();
 
       if (!hasChildren) {
         return (
           <div
             key={node.id}
             className={`flex cursor-pointer items-center rounded py-2 pl-6 hover:bg-gray-100 ${isSelected ? "bg-purple-100" : ""}`}
-            onClick={() => selectPosition(node.id, path)}
+            onClick={() => selectPosition(node.id, node.name)}
           >
-            <span className="ml-1">{node.label}</span>
+            <span className="ml-1">
+              {node.name} (Level {node.id})
+            </span>
             {isSelected && (
               <Check className="ml-auto h-4 w-4 text-purple-600" size={10} />
             )}
@@ -121,7 +186,7 @@ export function AddOperatorForm() {
       return (
         <Collapsible
           key={node.id}
-          open={openCategories[node.id]}
+          open={openCategories[node.id.toString()]}
           className="w-full"
         >
           <div className="flex flex-col">
@@ -129,22 +194,24 @@ export function AddOperatorForm() {
               asChild
               onClick={(e) => {
                 e.stopPropagation();
-                toggleCategory(node.id);
+                toggleCategory(node.id.toString());
               }}
             >
               <div
-                className={`flex cursor-pointer items-center rounded py-2 hover:bg-gray-100 ${formData.position === node.id ? "bg-purple-100" : ""}`}
+                className={`flex cursor-pointer items-center rounded py-2 hover:bg-gray-100 ${isSelected ? "bg-purple-100" : ""}`}
               >
-                {openCategories[node.id] ? (
+                {openCategories[node.id.toString()] ? (
                   <ChevronDown className="h-5 w-5 text-gray-500" size={10} />
                 ) : (
                   <ChevronRight className="h-5 w-5 text-gray-500" size={10} />
                 )}
-                <span className="ml-2">{node.label}</span>
+                <span className="ml-2">
+                  {node.name} (Level {node.id})
+                </span>
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent className="ml-2 border-l-2 border-gray-200 pl-4">
-              {node.children && renderPositionTree(node.children, path)}
+              {node.nodes && renderPositionTree(node.nodes)}
             </CollapsibleContent>
           </div>
         </Collapsible>
@@ -152,19 +219,11 @@ export function AddOperatorForm() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Form submitted:", formData);
-    // Handle form submission
-  };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="firstName" className="text-xl">
-            First Name
-          </Label>
+          <Label htmlFor="firstName">First Name</Label>
           <Input
             id="firstName"
             value={formData.firstName}
@@ -172,13 +231,10 @@ export function AddOperatorForm() {
               setFormData((prev) => ({ ...prev, firstName: e.target.value }))
             }
             required
-            className="text-lg"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="lastName" className="text-xl">
-            Last Name
-          </Label>
+          <Label htmlFor="lastName">Last Name</Label>
           <Input
             id="lastName"
             value={formData.lastName}
@@ -186,15 +242,12 @@ export function AddOperatorForm() {
               setFormData((prev) => ({ ...prev, lastName: e.target.value }))
             }
             required
-            className="text-lg"
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-xl">
-          Email
-        </Label>
+        <Label htmlFor="email">Email</Label>
         <Input
           id="email"
           type="email"
@@ -203,31 +256,26 @@ export function AddOperatorForm() {
             setFormData((prev) => ({ ...prev, email: e.target.value }))
           }
           required
-          className="text-lg"
         />
       </div>
 
       <div className="space-y-2">
         <div className="flex items-center">
-          <Label className="text-xl">Position in Organization</Label>
+          <Label>Position (Hierarchy Level)</Label>
           <FolderTree className="ml-2 h-4 w-4 text-gray-500" size={10} />
         </div>
-
-        {formData.positionPath && (
-          <div className="mb-2 text-sm text-gray-500">
-            Selected: {formData.positionPath}
+        {formData.positionName && (
+          <div className="text-sm text-gray-500">
+            Selected: {formData.positionName} (Level {formData.hierarchy})
           </div>
         )}
-
         <div className="max-h-60 overflow-y-auto rounded-md border p-3">
-          {renderPositionTree(positionTree)}
+          {renderPositionTree(organizationTree)}
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password" className="text-xl">
-          Default Password
-        </Label>
+        <Label htmlFor="password">Password</Label>
         <Input
           id="password"
           type="password"
@@ -236,14 +284,11 @@ export function AddOperatorForm() {
             setFormData((prev) => ({ ...prev, password: e.target.value }))
           }
           required
-          className="text-lg"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="contact" className="text-xl">
-          Contact
-        </Label>
+        <Label htmlFor="contact">Contact</Label>
         <Input
           id="contact"
           value={formData.contact}
@@ -251,58 +296,37 @@ export function AddOperatorForm() {
             setFormData((prev) => ({ ...prev, contact: e.target.value }))
           }
           required
-          className="text-lg"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="adminRole" className="text-xl">
-          Admin Role
-        </Label>
+        <Label htmlFor="role">Role</Label>
         <Select
-          value={formData.adminRole}
+          value={formData.role}
           onValueChange={(value) =>
-            setFormData((prev) => ({ ...prev, adminRole: value }))
+            setFormData((prev) => ({ ...prev, role: value }))
           }
         >
-          <SelectTrigger id="adminRole" className="text-lg">
-            <SelectValue placeholder="Select admin role" />
+          <SelectTrigger>
+            <SelectValue placeholder="Select role" />
           </SelectTrigger>
           <SelectContent>
-            {adminRoles.map((role) => (
-              <SelectItem key={role} value={role.toLowerCase()}>
-                {role}
+            {roles.map((role) => (
+              <SelectItem key={role} value={role}>
+                {role.replace("ROLE_", "")}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="permissions" className="text-xl">
-          Permissions
-        </Label>
-        <Select
-          value={formData.permissions}
-          onValueChange={(value) =>
-            setFormData((prev) => ({ ...prev, permissions: value }))
-          }
-        >
-          <SelectTrigger id="permissions" className="text-lg">
-            <SelectValue placeholder="Select permissions" />
-          </SelectTrigger>
-          <SelectContent>
-            {permissionLevels.map((level) => (
-              <SelectItem key={level} value={level.toLowerCase()}>
-                {level}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {submitError && <div className="text-red-500">{submitError}</div>}
+      {submitSuccess && (
+        <div className="text-green-500">Operator created successfully!</div>
+      )}
 
-      <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
-        Add Operator
+      <Button type="submit" disabled={isSubmitting || loadingTree}>
+        {isSubmitting ? "Creating..." : "Add Operator"}
       </Button>
     </form>
   );

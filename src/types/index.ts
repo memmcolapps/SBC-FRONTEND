@@ -115,11 +115,11 @@ export interface OrganizationNode {
   id: number;
   name: string;
   parent_id: number | null;
-  nodes: OrganizationNode[];
+  nodes?: OrganizationNode[];
 }
 
 export interface OrganizationTreeResponse {
   responsecode: string;
   responsedesc: string;
-  responsedata: OrganizationNode;
+  responsedata: OrganizationNode[];
 }
