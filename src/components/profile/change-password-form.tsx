@@ -34,7 +34,7 @@ export function ChangePasswordForm() {
 
     try {
       // Here you would typically make an API call to change the password
-      console.log("Changing password:", passwords);
+      // console.log("Changing password:", passwords);
       toast("Password changed successfully");
       setPasswords({
         currentPassword: "",
