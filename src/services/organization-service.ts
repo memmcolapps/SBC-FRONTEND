@@ -66,18 +66,14 @@ export async function saveOrganizationTree(
   }
 }
 
-export async function addOrganizationNode(
-  parentId: number | string,
-  newNode: Omit<OrganizationNode, "id">,
+export async function updateSingleNode(
+  node: OrganizationNode,
   token: string,
 ): Promise<OrganizationNode> {
   try {
-    const response = await axios.post<OrganizationNodeResponse>(
-      `${ORGANIZATION_API_URL}/add-node`,
-      {
-        parentId,
-        node: newNode,
-      },
+    const response = await axios.patch<OrganizationNodeResponse>(
+      `${ORGANIZATION_API_URL}/update-single-node`,
+      node,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -87,7 +83,7 @@ export async function addOrganizationNode(
 
     if (response.data.responsecode !== "000") {
       throw new Error(
-        response.data.responsedesc || "Failed to add organization node",
+        response.data.responsedesc || "Failed to update organization node",
       );
     }
 
@@ -97,25 +93,40 @@ export async function addOrganizationNode(
   }
 }
 
-export const updateOrganizationNodes = async (
-  nodes: OrganizationNode[],
+export async function createSingleNode(
+  newNode: Omit<OrganizationNode, "id">,
   token: string,
-): Promise<OrganizationNodeResponse> => {
+): Promise<boolean> {
   try {
-    const response = await axios.put<OrganizationNodeResponse>(
-      `${ORGANIZATION_API_URL}/update-nodes`,
-      { nodes },
+    const response = await axios.post<OrganizationNodeResponse>(
+      `${ORGANIZATION_API_URL}/create-single-node`,
+      newNode,
       {
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       },
     );
-    return response.data;
-  } catch (error) {
-    handleOrganizationError(error);
+
+    if (response.data.responsecode !== "000") {
+      throw new Error(
+        response.data.responsedesc || "Failed to create organization node",
+      );
+    }
+
+    // Return true if the creation was successful
+    return true;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error) && error.response?.data) {
+      const errData = error.response.data as OrganizationErrorResponse;
+      if (errData.responsedesc) {
+        throw new Error(errData.responsedesc);
+      }
+    }
+    throw error;
   }
-};
+}
 
 export async function deleteOrganizationNode(
   nodeId: number | string,

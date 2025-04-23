@@ -9,9 +9,9 @@ import { useAuth } from "@/context/auth-context";
 import {
   fetchOrganizationTree,
   saveOrganizationTree,
-  addOrganizationNode,
   deleteOrganizationNode,
-  updateOrganizationNodes,
+  createSingleNode,
+  updateSingleNode,
 } from "@/services/organization-service";
 import type { OrganizationNode } from "@/types";
 
@@ -234,41 +234,37 @@ export const OrgTree: React.FC = () => {
       return;
     }
 
-    const tempId = Date.now();
-    const newNode: TreeNode = {
-      id: tempId,
-      name: "New Node",
-      parent_id: parentId,
-      children: [],
-    };
-
     try {
-      // Optimistic update
-      const updatedTree = addChildToTree(tree, parentId, newNode);
-      setTree(updatedTree);
-
-      // Create proper payload that matches OrganizationNode without id
-      const newNodePayload: Omit<OrganizationNode, "id"> = {
-        name: newNode.name,
-        parent_id: newNode.parent_id,
-        nodes: [],
+      // Generate unique name using timestamp
+      const timestamp = Date.now();
+      const newNodePayload = {
+        name: `New Node ${timestamp}`,
+        parent_id: parentId,
       };
 
-      // Save to server
-      const savedNode = await addOrganizationNode(
-        parentId,
-        newNodePayload,
-        token,
-      );
+      // Create new node
+      const success = await createSingleNode(newNodePayload, token);
 
-      // Update with server-generated ID
-      const finalTree = updateNodeIdInTree(updatedTree, tempId, savedNode.id);
-      setTree(finalTree);
-      await saveTree(finalTree);
+      if (success) {
+        // Fetch the updated tree
+        const updatedTreeData = await fetchOrganizationTree(token);
+        if (updatedTreeData) {
+          const convertedNodes = convertApiTreeToComponentTree(updatedTreeData);
+          let rootNode = convertedNodes.find((node) => node.parent_id === null);
+          if (!rootNode) {
+            rootNode = {
+              id: 1,
+              name: "Root User",
+              parent_id: null,
+              children: convertedNodes,
+            };
+          }
+          setTree(rootNode);
+        }
+      }
     } catch (error) {
       console.error("Failed to add node:", error);
-      setTree(tree);
-      throw error;
+      throw error instanceof Error ? error : new Error("Failed to add node");
     }
   };
 
@@ -293,7 +289,6 @@ export const OrgTree: React.FC = () => {
     }
   };
 
-  // Update the renameNode function to handle bulk updates
   const renameNode = async (id: number, newName: string) => {
     const token = getAccessToken();
     if (!token) {
@@ -306,27 +301,21 @@ export const OrgTree: React.FC = () => {
       const updatedTree = renameInTree(tree, id, newName);
       setTree(updatedTree);
 
-      // Prepare the update payload
+      // Find the node to update
       const nodeToUpdate = findNodeInTree(updatedTree, id);
       if (!nodeToUpdate) {
         throw new Error("Node not found in tree");
       }
 
-      const updatePayload: OrganizationNode[] = [
+      // Update node on server
+      await updateSingleNode(
         {
           id: nodeToUpdate.id,
           name: newName,
           parent_id: nodeToUpdate.parent_id,
-          nodes: nodeToUpdate.children.map((child) => ({
-            id: child.id,
-            name: child.name,
-            parent_id: child.parent_id,
-            nodes: [], // Only include direct children if needed
-          })),
         },
-      ];
-
-      await updateOrganizationNodes(updatePayload, token);
+        token,
+      );
     } catch (error) {
       console.error("Failed to rename node:", error);
       setTree(tree);
