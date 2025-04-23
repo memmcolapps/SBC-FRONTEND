@@ -1,51 +1,55 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import axios, { type AxiosError } from "axios";
 import { env } from "@/env";
 
 const AUTH_API_URL = env.NEXT_PUBLIC_BASE_URL;
 
-interface OtpResponse {
+interface GenerateOtpResponse {
     responsecode: string;
     responsedesc: string;
-    responsedata?: any;
+    responsedata?: {
+        otp?: string;
+        expiry?: string;
+    };
 }
 
-export const generateOtpApi = async (email: string, token: string): Promise<OtpResponse> => {
+export const generateOtpApi = async (
+    email: string,
+    token: string
+): Promise<GenerateOtpResponse> => {
     try {
+        console.log("Email sent to backend:", email);
+        const formData = new URLSearchParams();
+        formData.append('email', email);
         const response = await axios.post(
             `${AUTH_API_URL}/organization/operator/api/generate-otp`,
-            { email },
+            formData.toString(),
             {
                 headers: {
-                    "Content-Type": "application/json",
+                    "Content-Type": "application/x-www-form-urlencoded",
                     "Authorization": `Bearer ${token}`
                 }
             }
         );
+        console.log("Email sent to backend:", email);
+        if (response.data.responsecode !== "000") {
+            throw new Error(response.data.responsedesc || "Failed to generate OTP");
+        }
         return response.data;
     } catch (error) {
-        const axiosError = error as AxiosError<OtpResponse>;
-        throw new Error(axiosError.response?.data?.responsedesc || "Failed to generate OTP");
-    }
-};
+        let errorMessage = "Failed to generate OTP";
 
-export const verifyOtpApi = async (email: string, otp: string, token: string): Promise<OtpResponse> => {
-    try {
-        const response = await axios.post(
-            `${AUTH_API_URL}/organization/operator/api/verify-otp`,
-            { email, otp },
-            {
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                }
-            }
-        );
-        return response.data;
-    } catch (error) {
-        const axiosError = error as AxiosError<OtpResponse>;
-        throw new Error(axiosError.response?.data?.responsedesc || "Invalid OTP");
+        if (axios.isAxiosError(error)) {
+            errorMessage = error.response?.data?.responsedesc || error.message;
+        } else if (error instanceof Error) {
+            errorMessage = error.message;
+        }
+
+        console.error("OTP generation error:", errorMessage);
+        throw new Error(errorMessage);
     }
 };

@@ -43,6 +43,7 @@ interface AuthTokens {
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
@@ -62,6 +63,7 @@ const AuthContext = createContext<AuthContextType>({
     console.error("AuthProvider not found");
     return null;
   },
+  token: null
 });
 
 const USER_STORAGE_KEY = "auth_user";
@@ -170,16 +172,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return tokens?.accessToken ?? null;
   }, [tokens]);
 
-  const contextValue = useMemo(
+    const contextValue = useMemo(
     () => ({
       user,
+      token: tokens?.accessToken ?? null,
       login,
       logout,
       isLoading,
       isAuthenticated: !!user,
       getAccessToken,
     }),
-    [user, login, logout, isLoading, getAccessToken],
+    [user, tokens, login, logout, isLoading, getAccessToken],
   );
 
   return (

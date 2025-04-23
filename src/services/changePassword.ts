@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -22,32 +23,32 @@ interface ChangePasswordResponse {
 
 export const changeUserPasswordApi = async (
     email: string,
-    currentPassword: string,
     newPassword: string,
+    confirmPassword: string,
     token: string,
     otp?: string
 ): Promise<ChangePasswordResponse> => {
     try {
         // Validate inputs
-        if (!email || !currentPassword || !newPassword || !token) {
+        if (!email || !newPassword || !confirmPassword || !token) {
             throw new Error("Missing required parameters");
         }
 
-        // Create form data with correct parameter names
+        // Create form data
         const formData = new URLSearchParams();
         formData.append('email', email);
-        formData.append('password', currentPassword); // Note the parameter name change
-        formData.append('newPassword', newPassword);
+        formData.append('password', newPassword);
+        formData.append('retype_password', confirmPassword);
         if (otp) formData.append('otp', otp);
 
         console.log("Request data:", {
             email,
-            password: currentPassword, // Masked in real implementation
-            newPassword: newPassword,  // Masked in real implementation
+            password: "****",
+            retype_password: "****",
             otp: otp ? "****" : undefined
         });
 
-        const response = await axios.patch(
+        const response = await axios.post(
             `${AUTH_API_URL}/organization/operator/api/update/change-password`,
             formData,
             {
@@ -58,17 +59,17 @@ export const changeUserPasswordApi = async (
             }
         );
 
-        if (response.data.responsecode !== "001") {
-            throw {
-                message: response.data.responsedesc || "Password change failed",
-                error: {
-                    code: response.data.error?.code,
-                    message: response.data.responsedesc
-                }
-            };
+        // First check if the response indicates success
+        if (response.data.responsecode === "000") {
+            return response.data;
         }
-
-        return response.data;
+        throw {
+            message: response.data.responsedesc || "Password change failed",
+            error: {
+                code: response.data.error?.code,
+                message: response.data.responsedesc
+            }
+        };
 
     } catch (error: unknown) {
         let errorMessage = "Failed to change password";
@@ -76,17 +77,27 @@ export const changeUserPasswordApi = async (
 
         if (axios.isAxiosError(error)) {
             const axiosError = error as AxiosError<ChangePasswordResponse>;
-            
+
             if (axiosError.response) {
-                errorMessage = axiosError.response.data?.responsedesc || 
-                             `Server error: ${axiosError.response.status}`;
+                // Use the server's error message if available
+                errorMessage = axiosError.response.data?.responsedesc ||
+                    axiosError.response.data?.message ||
+                    `Server error: ${axiosError.response.status}`;
                 errorCode = axiosError.response.data?.error?.code;
-                
+
                 if (axiosError.response.status === 401) {
                     errorCode = "TOKEN_EXPIRED";
                     errorMessage = "Session expired. Please login again.";
                 }
+            } else if (axiosError.request) {
+                errorMessage = "No response received from server";
+            } else {
+                errorMessage = axiosError.message;
             }
+        } else if (error instanceof Error) {
+            errorMessage = error.message;
+        } else if (typeof error === 'object' && error !== null && 'message' in error) {
+            errorMessage = (error as { message: string }).message;
         }
 
         console.error("Password change failed:", {
