@@ -1,10 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-"use client";
-
+import type React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +14,14 @@ interface PasswordForm {
   newPassword: string;
   confirmPassword: string;
   otp: string;
+}
+
+interface BackendError {
+  error?: {
+    code?: string;
+    message?: string;
+  };
+  message?: string;
 }
 
 export function ChangePasswordForm() {
@@ -68,7 +70,6 @@ export function ChangePasswordForm() {
         return;
       }
 
-      // Call API with only what backend expects: OTP and new password
       const response = await changeUserPasswordApi(
         user.email,
         passwords.newPassword,
@@ -78,12 +79,12 @@ export function ChangePasswordForm() {
       );
 
       if (response.responsecode !== "000") {
-        setError(response.responsedesc ?? "Failed to change password");
-        toast.error(response.responsedesc ?? "Password change failed");
+        const errorMessage = response.responsedesc ?? "Failed to change password";
+        setError(errorMessage);
+        toast.error(errorMessage);
         return;
       }
 
-      // Success case
       toast.success(response.message ?? "Password changed successfully");
       setPasswords({
         newPassword: "",
@@ -91,23 +92,40 @@ export function ChangePasswordForm() {
         otp: ""
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Password change failed:", error);
+      let errorMessage = "Failed to change password";
 
-      if (error.error?.code === 'TOKEN_EXPIRED') {
-        toast.error("Session expired. Please login again.");
-        router.push("/login");
-        return;
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        if ((error as BackendError)?.error?.code === 'TOKEN_EXPIRED') {
+          toast.error("Session expired. Please login again.");
+          router.push("/login");
+          return;
+        }
+      } else if (typeof error === 'object' && error !== null) {
+        if ('message' in error && typeof error.message === 'string') {
+          errorMessage = error.message;
+        }
+        if (
+          'error' in error &&
+          typeof (error as BackendError).error === 'object' &&
+          (error as BackendError).error !== null &&
+          'code' in ((error as BackendError).error ?? {}) &&
+          typeof (error as BackendError).error?.code === 'string'
+        ) {
+          toast.error("Session expired. Please login again.");
+          router.push("/login");
+          return;
+        }
+      } else if (typeof error === 'string') {
+        errorMessage = error;
       }
 
-      const errorMessage = error.message || "Failed to change password";
       setError(errorMessage);
       toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
     }
   };
-
   return (
     <>
       <Toaster />

@@ -1,9 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import axios, { type AxiosError } from "axios";
+import axios, { type AxiosError, type AxiosResponse } from "axios";
 import { env } from "@/env";
 
 const AUTH_API_URL = env.NEXT_PUBLIC_BASE_URL;
@@ -25,7 +20,7 @@ export const generateOtpApi = async (
         console.log("Email sent to backend:", email);
         const formData = new URLSearchParams();
         formData.append('email', email);
-        const response = await axios.post(
+        const response: AxiosResponse<GenerateOtpResponse> = await axios.post(
             `${AUTH_API_URL}/organization/operator/api/generate-otp`,
             formData.toString(),
             {
@@ -35,16 +30,17 @@ export const generateOtpApi = async (
                 }
             }
         );
-        console.log("Email sent to backend:", email);
+        console.log("OTP generation response:", response.data);
         if (response.data.responsecode !== "000") {
             throw new Error(response.data.responsedesc || "Failed to generate OTP");
         }
         return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
         let errorMessage = "Failed to generate OTP";
 
         if (axios.isAxiosError(error)) {
-            errorMessage = error.response?.data?.responsedesc || error.message;
+            const axiosError = error as AxiosError<GenerateOtpResponse>;
+            errorMessage = axiosError.response?.data?.responsedesc ?? axiosError.message;
         } else if (error instanceof Error) {
             errorMessage = error.message;
         }

@@ -30,7 +30,7 @@ interface UpdateUserResponseData {
         roleId: number;
         operatorRole: string;
     };
-    updatedAt: string; // Example field from the backend response
+    updatedAt: string;
 }
 
 interface UpdateUserResponse {
