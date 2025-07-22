@@ -10,14 +10,14 @@ export default {
       fontSize: {
         xs: "0.75rem", // 12px
         sm: "0.875rem", // 14px
-        base: "clamp(1rem, 1.1vw, 1.25rem)", // Fluid scaling (16px - 20px)
-        lg: "1.125rem", // 18px
-        xl: "1.25rem", // 20px
-        "2xl": "1.5rem", // 24px
-        "3xl": "1.875rem", // 30px
-        "4xl": "2.25rem", // 36px
-        "5xl": "3rem", // 48px
-        "6xl": "4rem", // 64px
+        base: "clamp(0.8rem, 0.9vw, 0.95rem)", // 12.8px - 15.2px range, // Smaller fluid scaling (14px - 16px)
+        lg: "1rem", // 16px (reduced from 1.125rem)
+        xl: "1.125rem", // 18px (reduced from 1.25rem)
+        "2xl": "1.25rem", // 20px (reduced from 1.5rem)
+        "3xl": "1.5rem", // 24px (reduced from 1.875rem)
+        "4xl": "1.875rem", // 30px (reduced from 2.25rem)
+        "5xl": "2.25rem", // 36px (reduced from 3rem)
+        "6xl": "3rem", // 48px (reduced from 4rem)
       },
       fontFamily: {
         sans: ["var(--font-geist-sans)", ...fontFamily.sans],
