@@ -19,38 +19,6 @@ export interface Breaker {
   lastAction: string;
 }
 
-export interface AuditLog {
-  id: string;
-  creator: {
-    id: number;
-    firstname: string;
-    lastname: string;
-    email: string;
-    contact: string;
-    ustate: boolean;
-    permission: boolean;
-    active: boolean;
-    roleId: number;
-    hierarchy: number;
-    roles: Array<{
-      roleId: number;
-      operatorRole: string;
-    }>;
-    nodes: Array<{
-      id: number;
-      name: string;
-      parent_id: number | null;
-    }>;
-    createdAt: string;
-    updatedAt: string;
-  };
-  description: string;
-  type: string;
-  sbc: unknown;
-  operator: unknown;
-  createdAt: string;
-}
-
 export interface Notification {
   id: string;
   type: "critical" | "warning" | "info";

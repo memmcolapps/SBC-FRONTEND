@@ -1,38 +1,41 @@
 // auditLogsService.ts
 import axios, { type AxiosError } from "axios";
 import { env } from "@/env";
+import { handleApiError } from "error";
 
 const AUDIT_LOGS_API_URL = env.NEXT_PUBLIC_BASE_URL;
 
-interface AuditLog {
+interface Role {
   id: string;
-  creator: {
-    id: number;
-    firstname: string;
-    lastname: string;
-    email: string;
-    contact: string;
-    ustate: boolean;
-    permission: boolean;
-    active: boolean;
-    roleId: number;
-    hierarchy: number;
-    roles: Array<{
-      roleId: number;
-      operatorRole: string;
-    }>;
-    nodes: Array<{
-      id: number;
-      name: string;
-      parent_id: number | null;
-    }>;
-    createdAt: string;
-    updatedAt: string;
-  };
+  orgId: string;
+  userId: string;
+  userRole: string;
+}
+
+interface Creator {
+  id: string;
+  orgId: string;
+  firstname: string;
+  lastname: string;
+  position: string;
+  email: string;
+  password: string;
+  location: string;
+  status: boolean;
+  permission: boolean;
+  active: boolean;
+  roles: Role[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AuditLog {
+  id: string;
+  creator: Creator;
   description: string;
   type: string;
-  sbc: unknown;
-  operator: unknown;
+  ipAddress: string;
+  userAgent: string;
   createdAt: string;
 }
 
@@ -49,20 +52,25 @@ interface AuditLogsResponse {
   responsedata: AuditLogsResponseData;
 }
 
+// For the service function return type
+type AuditLogsResult =
+  | { success: true; data: AuditLogsResponseData }
+  | { success: false; error: string };
+
 export async function fetchAuditLogs(
-  page: number,
-  size: number,
   token: string,
+  page?: number,
+  size?: number,
   dateFrom?: Date,
   dateTo?: Date,
-): Promise<AuditLogsResponseData> {
+): Promise<AuditLogsResult> {
   try {
-    // Create URLSearchParams for form data
+    if (!page) page = 0;
+    if (!size) size = 10;
     const params = new URLSearchParams();
     params.append("page", page.toString());
     params.append("size", size.toString());
 
-    // Add dates only if they are defined
     if (dateFrom) {
       params.append("startDate", dateFrom.toISOString().substring(0, 10));
     }
@@ -71,51 +79,31 @@ export async function fetchAuditLogs(
     }
 
     const response = await axios.get<AuditLogsResponse>(
-      `${AUDIT_LOGS_API_URL}/organization/api/audit/logs`,
+      `${AUDIT_LOGS_API_URL}/v1/api/audit/service/logs`,
       {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
           Authorization: `Bearer ${token}`,
         },
-        params: params,
+        params,
       },
     );
 
-    // Check if the response indicates success
     if (response.data.responsecode !== "000") {
-      throw new Error(
-        response.data.responsedesc || "Failed to fetch audit logs",
-      );
+      return {
+        success: false,
+        error: response.data.responsedesc || "Failed to fetch audit logs",
+      };
     }
 
-    return response.data.responsedata;
+    return {
+      success: true,
+      data: response.data.responsedata,
+    };
   } catch (error: unknown) {
-    let errorMessage = "Failed to fetch audit logs";
-
-    if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError<AuditLogsResponse>;
-
-      if (axiosError.response) {
-        // Server responded with a status other than 2xx
-        errorMessage =
-          axiosError.response.data.responsedesc ||
-          `Failed to fetch audit logs with status: ${axiosError.response.status}`;
-      } else if (axiosError.request) {
-        // Request was made but no response was received
-        errorMessage = "No response received while fetching audit logs";
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        errorMessage = `Request setup failed: ${axiosError.message}`;
-      }
-    } else if (error instanceof Error) {
-      // Handle other Error instances
-      errorMessage = `An unexpected error occurred: ${error.message}`;
-    } else {
-      // Handle other types of errors (e.g., strings, numbers)
-      errorMessage = `An unexpected error occurred: ${String(error)}`;
-    }
-
-    console.error("Audit Logs API error:", errorMessage);
-    throw new Error(errorMessage);
+    return {
+      success: false,
+      error: handleApiError(error),
+    };
   }
 }

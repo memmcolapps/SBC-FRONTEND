@@ -1,86 +1,53 @@
-// audit-page.tsx
 "use client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AuditLogFilters } from "@/components/audit/audit-log-filters";
 import { AuditLogTable } from "@/components/audit/audit-log-table";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { fetchAuditLogs } from "@/services/audit-logs-service"; // Adjust the path accordingly
-import type { AuditLog } from "@/types";
 import { useAuth } from "@/context/auth-context";
+import { useAuditLogs } from "@/hooks/use-audit";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AuditPage() {
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
-  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
-  const { getAccessToken } = useAuth();
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
 
-  useEffect(() => {
-    const fetchLogs = async () => {
-      setIsLoading(true);
-      setError(null);
+  const {
+    data: logsData,
+    isLoading,
+    error,
+  } = useAuditLogs(page, size, dateFrom, dateTo);
 
-      try {
-        const token = getAccessToken();
-        if (!token) {
-          window.location.href = "/login";
-          return;
-        }
-
-        const logsResponse = await fetchAuditLogs(
-          page,
-          size,
-          token,
-          dateFrom,
-          dateTo,
-        );
-        setAuditLogs(logsResponse.data);
-        setTotalItems(logsResponse.totalItems);
-        setTotalPages(logsResponse.totalPages);
-      } catch (error) {
-        if (error instanceof Error) {
-          toast.error(error.message);
-          setError(error.message);
-        } else {
-          toast.error("An unexpected error occurred");
-          setError("An unexpected error occurred. Please try again.");
-        }
-        console.error("Fetch audit logs error:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void fetchLogs();
-  }, [page, size, dateFrom, dateTo]);
-
-  const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newSize = Number(e.target.value);
+  const handlePageSizeChange = (value: string) => {
+    const newSize = Number(value);
     setSize(newSize);
     setPage(0); // Reset to first page when size changes
   };
 
   const handleNextPage = () => {
-    if (page < totalPages - 1) {
-      setPage((prevPage) => prevPage + 1);
+    if (logsData && page < logsData.totalPages - 1) {
+      setPage((prev) => prev + 1);
     }
   };
 
   const handlePrevPage = () => {
     if (page > 0) {
-      setPage((prevPage) => prevPage - 1);
+      setPage((prev) => prev - 1);
     }
   };
 
   const handleExport = () => {
-    // Implement your export logic here
-    console.log("Exporting logs...");
+    toast.info("Export functionality coming soon");
   };
 
   return (
@@ -95,7 +62,7 @@ export default function AuditPage() {
         <CardHeader>
           <CardTitle>Audit Logs</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <AuditLogFilters
             dateFrom={dateFrom}
             setDateFrom={setDateFrom}
@@ -103,56 +70,75 @@ export default function AuditPage() {
             setDateTo={setDateTo}
             onExport={handleExport}
           />
+
           {isLoading ? (
-            <p>Loading...</p>
+            <div className="space-y-4">
+              <Skeleton className="h-[400px] w-full" />
+              <div className="flex justify-between">
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-40" />
+                <Skeleton className="h-10 w-48" />
+              </div>
+            </div>
           ) : error ? (
-            <p style={{ color: "red" }}>{error}</p>
-          ) : (
+            <div className="rounded-md bg-destructive/10 p-4 text-destructive">
+              {error.message || "Failed to load audit logs"}
+            </div>
+          ) : logsData ? (
             <>
-              <AuditLogTable auditLogs={auditLogs} />
-              <div className="mt-4 flex items-center justify-between">
-                {/* Pagination Controls */}
-                <div>
-                  <button
-                    className="mr-2 rounded-md bg-gray-200 px-4 py-2 hover:bg-gray-300"
+              {console.log("Audit logs data:", logsData)}
+              <AuditLogTable auditLogs={logsData.data} />
+              <div className="mt-4 flex flex-col items-center justify-between gap-4 sm:flex-row">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
                     onClick={handlePrevPage}
                     disabled={page === 0}
                   >
                     Previous
-                  </button>
-                  <button
-                    className="rounded-md bg-gray-200 px-4 py-2 hover:bg-gray-300"
+                  </Button>
+                  <Button
+                    variant="outline"
                     onClick={handleNextPage}
-                    disabled={page === totalPages - 1}
+                    disabled={!logsData || page >= logsData.totalPages - 1}
                   >
                     Next
-                  </button>
+                  </Button>
                 </div>
 
-                {/* Page Size Selector */}
-                <div className="flex items-center">
-                  <span className="mr-2">Items per page:</span>
-                  <select
-                    value={size}
-                    onChange={handlePageSizeChange}
-                    className="rounded-md border px-3 py-2"
+                <div className="flex items-center gap-2">
+                  <span>Items per page:</span>
+                  <Select
+                    value={size.toString()}
+                    onValueChange={handlePageSizeChange}
                   >
-                    <option value="5">5</option>
-                    <option value="10">10</option>
-                    <option value="20">20</option>
-                  </select>
+                    <SelectTrigger className="w-20">
+                      <SelectValue placeholder={size} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5</SelectItem>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                {/* Pagination Info */}
-                <div>
-                  <span>
-                    Showing {page * size + 1} to{" "}
-                    {page * size + auditLogs.length} of {totalItems} items
-                  </span>
+                <div className="text-sm text-muted-foreground">
+                  Showing{" "}
+                  <span className="font-medium">
+                    {logsData.data.length > 0 ? page * size + 1 : 0}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-medium">
+                    {page * size + logsData.data.length}
+                  </span>{" "}
+                  of <span className="font-medium">{logsData.totalItems}</span>{" "}
+                  items
                 </div>
               </div>
             </>
-          )}
+          ) : null}
         </CardContent>
       </Card>
     </div>
