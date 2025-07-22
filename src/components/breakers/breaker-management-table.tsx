@@ -200,11 +200,12 @@ export function BreakerManagementTable() {
             <TableRow>
               <TableHead className="w-12"></TableHead>
               <TableHead>SBC ID</TableHead>
+              <TableHead>Asset Id</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Location</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Breaker Count</TableHead>
-              <TableHead>Last Action</TableHead>
+              <TableHead>Date Added</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -222,9 +223,10 @@ export function BreakerManagementTable() {
                     />
                   </TableCell>
                   <TableCell>{breaker.sbcId}</TableCell>
+                  <TableCell>{breaker.assetId}</TableCell>
                   <TableCell>{breaker.name}</TableCell>
                   <TableCell>
-                    {breaker.city}, {breaker.state}
+                    {breaker.city}, {breaker.state}, {breaker.streetName}
                   </TableCell>
                   <TableCell>
                     <span
@@ -239,7 +241,7 @@ export function BreakerManagementTable() {
                   </TableCell>
                   <TableCell>{breaker.breakerCount}</TableCell>
                   <TableCell>
-                    {breaker.lastAction || "No recent actions"}
+                    {new Date(breaker.createdAt).toLocaleString()}
                   </TableCell>
                 </TableRow>
                 {breaker.isExpanded && (
