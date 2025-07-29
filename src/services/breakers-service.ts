@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import axios, { type AxiosError } from "axios";
 import { env } from "@/env";
 import { handleApiError } from "error";
@@ -12,6 +13,25 @@ const API_BASE_URL = env.NEXT_PUBLIC_BASE_URL;
 type BreakersResult =
   | { success: true; data: Breaker[] }
   | { success: false; error: string };
+
+// Define the type for the data sent to the register breaker API
+export type RegisterBreakerPayload = {
+  sbcId: string;
+  state: string;
+  name: string;
+  breakerCount: number;
+  city: string;
+  streetName: string;
+  assetId: string;
+};
+
+// Define the type for the response from the register breaker API
+export type RegisterBreakerResponse = {
+  responsecode: string;
+  responsedesc: string;
+  responsedata: any; // Adjust this type based on the actual success response data
+};
+
 export const fetchBreakers = async (
   filters: BreakerFilters,
   token: string,

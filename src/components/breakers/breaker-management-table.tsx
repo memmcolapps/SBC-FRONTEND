@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useBreakers } from "@/hooks/use-breakers";
 import { Skeleton } from "@/components/ui/skeleton";
 import { type Breaker } from "@/types/breakers";
+import React from "react"; // Import React to use React.Fragment
 
 interface ExpandedBreaker extends Breaker {
   isExpanded: boolean;
@@ -210,9 +211,10 @@ export function BreakerManagementTable() {
           </TableHeader>
           <TableBody>
             {breakers.map((breaker) => (
-              <>
+              // --- KEY ADDED TO REACT.FRAGMENT ---
+              <React.Fragment key={breaker.id}>
                 <TableRow
-                  key={breaker.id}
+                  // No need for key here, as the parent Fragment has it
                   className="cursor-pointer hover:bg-gray-50"
                   onClick={() => toggleExpandBreaker(breaker.id)}
                 >
@@ -230,11 +232,10 @@ export function BreakerManagementTable() {
                   </TableCell>
                   <TableCell>
                     <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        breaker.status === "Active"
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${breaker.status === "Active"
                           ? "bg-green-100 text-green-800"
                           : "bg-red-100 text-red-800"
-                      }`}
+                        }`}
                     >
                       {breaker.status}
                     </span>
@@ -252,7 +253,7 @@ export function BreakerManagementTable() {
                           .filter(([_, show]) => show)
                           .map(([btnId, isActive]) => (
                             <Button
-                              key={btnId}
+                              key={btnId} // This key was already correct
                               variant={isActive ? "default" : "outline"}
                               className={
                                 isActive
@@ -268,7 +269,7 @@ export function BreakerManagementTable() {
                     </TableCell>
                   </TableRow>
                 )}
-              </>
+              </React.Fragment>
             ))}
           </TableBody>
         </Table>
