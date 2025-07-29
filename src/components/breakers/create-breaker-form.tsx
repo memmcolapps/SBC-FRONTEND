@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,34 +12,67 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useRegisterBreaker } from "@/hooks/use-breakers";
+import { toast } from "sonner";
 
 interface FormData {
   sbcId: string;
-  location: string;
-  sbcName: string;
-  numberOfBreakers: string;
-  position: string;
-  operator: string;
+  state: string;
+  name: string;
+  breakerCounter: string;
+  city: string;
+  streetName: string;
+  assetId: string;
 }
 
 const numberOfBreakersOptions = ["1", "2", "3", "4", "5", "6"];
-const positionOptions = ["Manager", "Supervisor", "Operator"];
-const operatorOptions = ["John Doe", "Jane Smith", "Mike Johnson"];
 
 export function CreateBreakerForm() {
   const [formData, setFormData] = useState<FormData>({
     sbcId: "",
-    location: "",
-    sbcName: "",
-    numberOfBreakers: "",
-    position: "",
-    operator: "",
+    state: "",
+    city: "",
+    streetName: "",
+    name: "",
+    breakerCounter: "",
+    assetId: "",
   });
+
+  const { mutate: registerBreakerMutation, isPending } = useRegisterBreaker();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
-    // Handle form submission
+
+    // Create a new payload object that matches backend expectations
+    const payloadForApi = {
+      sbcId: formData.sbcId,
+      name: formData.name,
+      assetId: formData.assetId,
+      state: formData.state,
+      breakerCount: parseInt(formData.breakerCounter, 10), // Convert to number
+      streetName: formData.streetName,
+      city: formData.city,
+    };
+
+    registerBreakerMutation(payloadForApi, { // Pass the adjusted payload
+      onSuccess: () => {
+        toast.success("Breaker registered successfully!");
+        // Optionally reset the form after successful submission
+        setFormData({
+          sbcId: "",
+          state: "",
+          city: "",
+          streetName: "",
+          name: "",
+          breakerCounter: "",
+          assetId: "",
+        });
+      },
+      onError: (error) => {
+        console.error("Error registering breaker:", error); // Log the full error object for more details
+        toast.error(`Failed to register breaker: ${error.message}`);
+      },
+    });
   };
 
   return (
@@ -62,16 +94,46 @@ export function CreateBreakerForm() {
       </div>
 
       <div className="space-y-3">
-        <Label htmlFor="location" className="text-lg">
-          Location
+        <Label htmlFor="state" className="text-lg">
+          State
         </Label>
         <Input
-          id="location"
-          value={formData.location}
+          id="state"
+          value={formData.state}
           onChange={(e) =>
-            setFormData((prev) => ({ ...prev, location: e.target.value }))
+            setFormData((prev) => ({ ...prev, state: e.target.value }))
           }
-          placeholder="Enter location"
+          placeholder="Enter State"
+          required
+          className="text-lg"
+        />
+      </div>
+      <div className="space-y-3">
+        <Label htmlFor="city" className="text-lg">
+          City
+        </Label>
+        <Input
+          id="city"
+          value={formData.city}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, city: e.target.value }))
+          }
+          placeholder="Enter City"
+          required
+          className="text-lg"
+        />
+      </div>
+      <div className="space-y-3">
+        <Label htmlFor="streetName" className="text-lg">
+          Street Name
+        </Label>
+        <Input
+          id="streetName" // Corrected ID
+          value={formData.streetName} // Corrected value
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, streetName: e.target.value }))
+          }
+          placeholder="Enter The Street Name"
           required
           className="text-lg"
         />
@@ -83,9 +145,9 @@ export function CreateBreakerForm() {
         </Label>
         <Input
           id="sbcName"
-          value={formData.sbcName}
+          value={formData.name}
           onChange={(e) =>
-            setFormData((prev) => ({ ...prev, sbcName: e.target.value }))
+            setFormData((prev) => ({ ...prev, name: e.target.value }))
           }
           placeholder="Enter SBC name"
           required
@@ -94,13 +156,13 @@ export function CreateBreakerForm() {
       </div>
 
       <div className="space-y-3">
-        <Label htmlFor="numberOfBreakers" className="text-lg">
-          Number Of Breakers
+        <Label htmlFor="numberOfBreaker" className="text-lg">
+          Breaker counter
         </Label>
         <Select
-          value={formData.numberOfBreakers}
+          value={formData.breakerCounter}
           onValueChange={(value) =>
-            setFormData((prev) => ({ ...prev, numberOfBreakers: value }))
+            setFormData((prev) => ({ ...prev, breakerCounter: value }))
           }
         >
           <SelectTrigger id="numberOfBreakers">
@@ -117,53 +179,27 @@ export function CreateBreakerForm() {
       </div>
 
       <div className="space-y-3">
-        <Label htmlFor="position" className="text-lg">
-          Select Position In Organization
+        <Label htmlFor="assetId" className="text-lg">
+          Enter the Asset Id
         </Label>
-        <Select
-          value={formData.position}
-          onValueChange={(value) =>
-            setFormData((prev) => ({ ...prev, position: value }))
+        <Input
+          id="assetId"
+          value={formData.assetId}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, assetId: e.target.value }))
           }
-        >
-          <SelectTrigger id="position">
-            <SelectValue placeholder="Select position" />
-          </SelectTrigger>
-          <SelectContent>
-            {positionOptions.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          placeholder="Enter Asset Id"
+          required
+          className="text-lg"
+        />
       </div>
 
-      <div className="space-y-3">
-        <Label htmlFor="operator" className="text-lg">
-          Assigned Operator
-        </Label>
-        <Select
-          value={formData.operator}
-          onValueChange={(value) =>
-            setFormData((prev) => ({ ...prev, operator: value }))
-          }
-        >
-          <SelectTrigger id="operator">
-            <SelectValue placeholder="Select operator" />
-          </SelectTrigger>
-          <SelectContent>
-            {operatorOptions.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
-        Create Breaker
+      <Button
+        type="submit"
+        className="bg-purple-600 hover:bg-purple-700"
+        disabled={isPending} // Disable button while the mutation is pending
+      >
+        {isPending ? "Creating Breaker..." : "Create Breaker"}
       </Button>
     </form>
   );
