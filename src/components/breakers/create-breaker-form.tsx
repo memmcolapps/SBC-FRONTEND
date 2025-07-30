@@ -1,3 +1,5 @@
+// src/components/create-breaker-form.tsx
+
 "use client";
 
 import type React from "react";
@@ -13,15 +15,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useRegisterBreaker } from "@/hooks/use-breakers";
+import { useNigerianCities, useNigerianStates } from "@/hooks/use-location";
 import { toast } from "sonner";
 
 interface FormData {
   sbcId: string;
-  state: string;
+  stateId: string;
+  cityId: string;
+  streetName: string;
   name: string;
   breakerCounter: string;
-  city: string;
-  streetName: string;
   assetId: string;
 }
 
@@ -30,8 +33,8 @@ const numberOfBreakersOptions = ["1", "2", "3", "4", "5", "6"];
 export function CreateBreakerForm() {
   const [formData, setFormData] = useState<FormData>({
     sbcId: "",
-    state: "",
-    city: "",
+    stateId: "",
+    cityId: "",
     streetName: "",
     name: "",
     breakerCounter: "",
@@ -40,28 +43,36 @@ export function CreateBreakerForm() {
 
   const { mutate: registerBreakerMutation, isPending } = useRegisterBreaker();
 
+  // Fetch states
+  const { data: states, isLoading: isLoadingStates, isError: isErrorStates } = useNigerianStates();
+
+  // Fetch cities based on selected state
+  const {
+    data: cities,
+    isLoading: isLoadingCities,
+    isError: isErrorCities,
+  } = useNigerianCities(formData.stateId);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Create a new payload object that matches backend expectations
     const payloadForApi = {
       sbcId: formData.sbcId,
       name: formData.name,
       assetId: formData.assetId,
-      state: formData.state,
-      breakerCount: parseInt(formData.breakerCounter, 10), // Convert to number
+      state: states?.find((s) => s.id === formData.stateId)?.name ?? "",
+      city: cities?.find((c) => c.id === formData.cityId)?.name ?? "",
       streetName: formData.streetName,
-      city: formData.city,
+      breakerCount: parseInt(formData.breakerCounter, 10),
     };
 
-    registerBreakerMutation(payloadForApi, { // Pass the adjusted payload
+    registerBreakerMutation(payloadForApi, {
       onSuccess: () => {
         toast.success("Breaker registered successfully!");
-        // Optionally reset the form after successful submission
         setFormData({
           sbcId: "",
-          state: "",
-          city: "",
+          stateId: "",
+          cityId: "",
           streetName: "",
           name: "",
           breakerCounter: "",
@@ -69,10 +80,25 @@ export function CreateBreakerForm() {
         });
       },
       onError: (error) => {
-        console.error("Error registering breaker:", error); // Log the full error object for more details
+        console.error("Error registering breaker:", error);
         toast.error(`Failed to register breaker: ${error.message}`);
       },
     });
+  };
+
+  const handleStateChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      stateId: value,
+      cityId: "", // Reset city when state changes
+    }));
+  };
+
+  const handleCityChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      cityId: value,
+    }));
   };
 
   return (
@@ -93,43 +119,77 @@ export function CreateBreakerForm() {
         />
       </div>
 
+      {/* State Dropdown */}
       <div className="space-y-3">
         <Label htmlFor="state" className="text-lg">
           State
         </Label>
-        <Input
-          id="state"
-          value={formData.state}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, state: e.target.value }))
-          }
-          placeholder="Enter State"
+        <Select
+          value={formData.stateId}
+          onValueChange={handleStateChange}
+          disabled={isLoadingStates}
           required
-          className="text-lg"
-        />
+        >
+          <SelectTrigger id="state">
+            <SelectValue placeholder={isLoadingStates ? "Loading states..." : "Select State"} />
+          </SelectTrigger>
+          <SelectContent>
+            {/* Changed value from "" to a unique, non-empty string */}
+            {isErrorStates && <SelectItem value="error-states" disabled>Error loading states</SelectItem>}
+            {!isLoadingStates && states?.length === 0 && <SelectItem value="no-states-found" disabled>No states found</SelectItem>}
+            {states?.map((state) => (
+              <SelectItem key={state.id} value={state.id}>
+                {state.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
+
+      {/* City Dropdown */}
       <div className="space-y-3">
         <Label htmlFor="city" className="text-lg">
           City
         </Label>
-        <Input
-          id="city"
-          value={formData.city}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, city: e.target.value }))
-          }
-          placeholder="Enter City"
+        <Select
+          value={formData.cityId}
+          onValueChange={handleCityChange}
+          disabled={!formData.stateId || isLoadingCities}
           required
-          className="text-lg"
-        />
+        >
+          <SelectTrigger id="city">
+            <SelectValue
+              placeholder={
+                isLoadingCities
+                  ? "Loading cities..."
+                  : formData.stateId
+                    ? "Select City"
+                    : "Select a state first"
+              }
+            />
+          </SelectTrigger>
+          <SelectContent>
+            {/* Changed value from "" to a unique, non-empty string */}
+            {isErrorCities && <SelectItem value="error-cities" disabled>Error loading cities</SelectItem>}
+            {!isLoadingCities && cities?.length === 0 && formData.stateId && (
+              <SelectItem value="no-cities-found" disabled>No cities found for this state</SelectItem>
+            )}
+            {cities?.map((city) => (
+              <SelectItem key={city.id} value={city.id}>
+                {city.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
+
       <div className="space-y-3">
         <Label htmlFor="streetName" className="text-lg">
           Street Name
         </Label>
         <Input
-          id="streetName" // Corrected ID
-          value={formData.streetName} // Corrected value
+          id="streetName"
+          value={formData.streetName}
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, streetName: e.target.value }))
           }
@@ -164,6 +224,7 @@ export function CreateBreakerForm() {
           onValueChange={(value) =>
             setFormData((prev) => ({ ...prev, breakerCounter: value }))
           }
+          required
         >
           <SelectTrigger id="numberOfBreakers">
             <SelectValue placeholder="Select number of breakers" />
@@ -197,7 +258,7 @@ export function CreateBreakerForm() {
       <Button
         type="submit"
         className="bg-purple-600 hover:bg-purple-700"
-        disabled={isPending} // Disable button while the mutation is pending
+        disabled={isPending || isLoadingStates || isLoadingCities}
       >
         {isPending ? "Creating Breaker..." : "Create Breaker"}
       </Button>
