@@ -46,7 +46,7 @@ export async function loginApi(
     formData.append("username", email);
     formData.append("password", password);
     const response = await axios.post<LoginResponse>(
-      `${AUTH_API_URL}/v1/api/auth/service/admin/login`,
+      `${AUTH_API_URL}/v1/api/sbc/auth/service/admin/login`,
       formData,
       {
         headers: {
