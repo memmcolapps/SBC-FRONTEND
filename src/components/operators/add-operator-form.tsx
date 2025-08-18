@@ -11,7 +11,12 @@ import { toast } from "sonner";
 
 const roles = ["READ", "WRITE", "ADMIN"];
 
-export function AddOperatorForm() {
+// Define the props interface to accept the onSuccess callback
+interface AddOperatorFormProps {
+  onSuccess: () => void;
+}
+
+export function AddOperatorForm({ onSuccess }: AddOperatorFormProps) {
   const [formData, setFormData] = useState<CreateOperatorPayload>({
     firstname: "",
     lastname: "",
@@ -43,6 +48,8 @@ export function AddOperatorForm() {
           permission: true,
           role: "READ",
         });
+        // Call the onSuccess callback to signal the parent component to close the dialog
+        onSuccess();
       },
       onError: (error) => {
         console.error("Operator creation error:", error.message);
@@ -160,10 +167,12 @@ export function AddOperatorForm() {
           </SelectContent>
         </Select>
       </div>
-      <Button type="submit" disabled={isPending || !isFormValid}>
+      <div className="flex justify-end items-end">
+      <Button type="submit" disabled={isPending || !isFormValid} className="cursor-pointer">
         {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
         {isPending ? "Creating..." : "Create Operator"}
       </Button>
+      </div>
     </form>
   );
 }

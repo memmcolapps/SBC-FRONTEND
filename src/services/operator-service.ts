@@ -2,10 +2,8 @@
 import axios, { AxiosError } from "axios";
 import { env } from "@/env";
 
-// The 'api' object was used but not defined.
 const api = axios.create({
-  baseURL: `${env.NEXT_PUBLIC_BASE_URL}/v1`, // Assuming the base URL is where the endpoints are
-  // You might want to add other default headers or configurations here
+  baseURL: `${env.NEXT_PUBLIC_BASE_URL}/v1`,
 });
 
 interface OperatorsApiResponse {
@@ -23,7 +21,7 @@ export interface OperatorApiResponse {
   responsedata: OperatorFromApi | {
     totalData: number;
     data: OperatorFromApi[];
-  };
+  } | string; // Allow string for empty responsedata
 }
 
 export interface OperatorFromApi {
@@ -51,7 +49,6 @@ export interface OperatorFromApi {
   hierarchy?: number;
 }
 
-// Simplified OperatorForUI interface to have a single `role` field.
 export interface OperatorForUI {
   id: string;
   firstname: string;
@@ -59,7 +56,7 @@ export interface OperatorForUI {
   email: string;
   contact: string;
   position: string;
-  status: "ACTIVE" | "INACTIVE";
+  status: "ACTIVE" | "INACTIVE" | "BLOCKED";
   permission: boolean;
   role: string;
   password?: string;
@@ -93,7 +90,6 @@ export const fetchOperators = async (params: FetchOperatorsParams): Promise<Pagi
 
     const apiData = response.data.responsedata;
 
-    // Map the raw API data to the cleaner UI format.
     const content: OperatorForUI[] = apiData.data.map((op: OperatorFromApi) => ({
       id: op.id,
       firstname: op.firstname,
@@ -101,9 +97,8 @@ export const fetchOperators = async (params: FetchOperatorsParams): Promise<Pagi
       email: op.email,
       contact: op.phoneNumber,
       position: op.position,
-      status: op.status ? "ACTIVE" : "INACTIVE",
+      status: op.status ? "ACTIVE" : "BLOCKED",
       permission: op.permission,
-      // Map the first role from the API to the single `role` field for the UI.
       role: op.roles?.[0]?.userRole.replace("ROLE_", "") ?? "READ",
       password: op.password,
       location: op.location,
@@ -115,9 +110,7 @@ export const fetchOperators = async (params: FetchOperatorsParams): Promise<Pagi
       totalElements: apiData.totalData,
       totalPages: Math.ceil(apiData.totalData / (params.size ?? 10)),
     };
-
   } catch (error) {
-    // Handle errors
     console.error("Failed to fetch operators:", error);
     throw error;
   }
@@ -126,7 +119,7 @@ export const fetchOperators = async (params: FetchOperatorsParams): Promise<Pagi
 export const getOperator = async (id: string, token: string): Promise<OperatorForUI> => {
   try {
     const response = await axios.get<OperatorApiResponse>(
-      `${env.NEXT_PUBLIC_BASE_URL}/v1/api/operator/service/${id}`,
+      `${env.NEXT_PUBLIC_BASE_URL}/v1/api/operator/service/all`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -137,8 +130,8 @@ export const getOperator = async (id: string, token: string): Promise<OperatorFo
     const apiData = response.data.responsedata;
     const op = Array.isArray(apiData) ? apiData[0] : (apiData as any).data?.[0] || apiData as OperatorFromApi;
 
-    if (!op) {
-      throw new Error("Invalid response from server: Empty operator data.");
+    if (!op || typeof op === "string") {
+      throw new Error("Invalid response from server: Empty or invalid operator data.");
     }
 
     return {
@@ -150,10 +143,9 @@ export const getOperator = async (id: string, token: string): Promise<OperatorFo
       location: op.location,
       hierarchy: op.hierarchy ?? 0,
       position: op.position,
-      status: op.status ? "ACTIVE" : "INACTIVE",
+      status: op.status ? "ACTIVE" : "BLOCKED",
       permission: op.permission ?? false,
       password: op.password ?? "",
-      // Map the first role from the API to the single `role` field for the UI.
       role: op.roles?.[0]?.userRole.replace("ROLE_", "") ?? "READ",
     };
   } catch (error) {
@@ -218,7 +210,7 @@ export const createOperator = async (
 
     const op = Array.isArray((apiResponse.responsedata as any).data) ? (apiResponse.responsedata as any).data[0] : apiResponse.responsedata as OperatorFromApi;
 
-    if (!op?.id) {
+    if (!op || typeof op === "string") {
       console.warn("Empty or invalid responsedata received, returning minimal OperatorForUI");
       return {
         id: "",
@@ -244,10 +236,9 @@ export const createOperator = async (
       location: op.location,
       hierarchy: op.hierarchy ?? 0,
       position: op.position,
-      status: op.status ? "ACTIVE" : "INACTIVE",
+      status: op.status ? "ACTIVE" : "BLOCKED",
       permission: op.permission ?? false,
       password: op.password ?? "",
-      // Map the first role from the API to the single `role` field for the UI.
       role: op.roles?.[0]?.userRole.replace("ROLE_", "") ?? "READ",
     };
   } catch (error) {
@@ -276,17 +267,23 @@ export const createOperator = async (
   }
 };
 
+export interface UpdateOperatorStatePayload {
+  userId: string;
+  state: boolean;
+}
+
 export const updateOperatorStatus = async (
-  id: string,
-  status: "ACTIVE" | "INACTIVE",
+  payload: UpdateOperatorStatePayload,
   token: string,
 ): Promise<OperatorForUI> => {
   try {
-    const newStatus = status === "ACTIVE";
-    console.log("Update Operator Status Request:", { url: `${env.NEXT_PUBLIC_BASE_URL}/v1/api/operator/service/update`, status: newStatus, id });
-    const response = await axios.put<OperatorApiResponse>(
-      `${env.NEXT_PUBLIC_BASE_URL}/v1/api/operator/service/update`,
-      { id, status: newStatus },
+    console.log("Update Operator Status Request:", { 
+      url: `${env.NEXT_PUBLIC_BASE_URL}/v1/api/operator/service/block`,
+      payload 
+    });
+    const response = await axios.patch<OperatorApiResponse>(
+      `${env.NEXT_PUBLIC_BASE_URL}/v1/api/operator/service/block`,
+      { userId: payload.userId, state: payload.state }, // Send in body
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -296,12 +293,19 @@ export const updateOperatorStatus = async (
     );
 
     console.log("Update Operator Status Response:", JSON.stringify(response.data, null, 2));
+
+    if (!["200", "201", "00", "000"].includes(response.data.responsecode)) {
+      throw new Error(`API error: ${response.data.responsedesc || "Unexpected response code"}`);
+    }
+
     const apiData = response.data.responsedata;
-    const op = Array.isArray(apiData) ? apiData[0] : (apiData as any).data?.[0] || apiData as OperatorFromApi;
+    const op = Array.isArray(apiData) ? apiData[0] : (apiData as any).data?.[0] || (typeof apiData === "string" ? null : apiData as OperatorFromApi);
 
     if (!op) {
-      throw new Error("Invalid response from server: Empty operator data.");
+      console.error("Invalid response data:", apiData);
+      throw new Error(`Invalid response from server: Empty or invalid operator data. Response: ${JSON.stringify(response.data, null, 2)}`);
     }
+
     return {
       id: op.id,
       firstname: op.firstname,
@@ -311,10 +315,9 @@ export const updateOperatorStatus = async (
       location: op.location,
       hierarchy: op.hierarchy ?? 0,
       position: op.position,
-      status: op.status ? "ACTIVE" : "INACTIVE",
+      status: op.status ? "ACTIVE" : "BLOCKED",
       permission: op.permission ?? false,
       password: op.password ?? "",
-      // Map the first role from the API to the single `role` field for the UI.
       role: op.roles?.[0]?.userRole.replace("ROLE_", "") ?? "READ",
     };
   } catch (error) {
@@ -326,11 +329,13 @@ export const updateOperatorStatus = async (
           ? "Authentication failed: Invalid or expired token."
           : serverError.responsedesc?.includes("not found") || serverError.error?.includes("Not Found")
             ? "Operator not found."
-            : "Failed to update operator status. Please try again."
+            : serverError.responsedesc?.includes("Required request parameter")
+              ? `Invalid request: ${serverError.responsedesc ?? serverError.error ?? "Missing required parameter"}`
+              : `Failed to update operator status: ${serverError.responsedesc ?? serverError.error ?? "Unknown error"}`
       );
     }
     console.error("Non-Axios Error:", error);
-    throw new Error("An unexpected error occurred while updating operator status.");
+    throw error instanceof Error ? error : new Error("An unexpected error occurred while updating operator status.");
   }
 };
 
@@ -342,7 +347,7 @@ export const editOperator = async (
   try {
     const apiPayload = {
       ...payload,
-      id, // Add the ID to the payload for the update
+      id,
     };
     console.log("Edit Operator Request:", { url: `${env.NEXT_PUBLIC_BASE_URL}/v1/api/operator/service/update`, payload: apiPayload });
     const response = await axios.put<OperatorApiResponse>(
@@ -364,10 +369,10 @@ export const editOperator = async (
     }
 
     const apiData = response.data.responsedata;
-    const op = Array.isArray(apiData) ? apiData[0] : (apiData as any).data?.[0] || apiData as OperatorFromApi;
-    
+    const op = Array.isArray(apiData) ? apiData[0] : (apiData as any).data?.[0] || (typeof apiData === "string" ? null : apiData as OperatorFromApi);
+
     if (!op) {
-      console.warn("Empty responsedata received, returning minimal OperatorForUI");
+      console.warn("Empty or invalid responsedata received, returning minimal OperatorForUI");
       return {
         id,
         firstname: payload.firstname,
@@ -382,6 +387,7 @@ export const editOperator = async (
         role: payload.role,
       };
     }
+
     return {
       id: op.id,
       firstname: op.firstname,
@@ -391,10 +397,9 @@ export const editOperator = async (
       location: op.location,
       hierarchy: op.hierarchy ?? 0,
       position: op.position,
-      status: op.status ? "ACTIVE" : "INACTIVE",
+      status: op.status ? "ACTIVE" : "BLOCKED",
       permission: op.permission ?? false,
       password: op.password ?? "",
-      // Map the first role from the API to the single `role` field for the UI.
       role: op.roles?.[0]?.userRole.replace("ROLE_", "") ?? "READ",
     };
   } catch (error) {

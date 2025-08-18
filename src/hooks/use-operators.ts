@@ -2,7 +2,6 @@
 import { type UseMutationResult, type UseQueryResult, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     fetchOperators,
-    updateOperatorStatus,
     createOperator,
     editOperator,
     type PaginatedOperators,
@@ -11,9 +10,35 @@ import {
     type FetchOperatorsParams,
 } from "@/services/operator-service";
 import { useAuth } from "@/context/auth-context";
+import { toast } from "sonner";
+import { env } from "@/env";
 
-// Fix: Changed `hierarchyId` from number to string to match the `FetchOperatorsParams` type.
-// This resolves the type incompatibility error.
+interface UpdateOperatorStatePayload {
+    userId: string;
+    state: boolean;
+}
+
+// CORRECTED SERVICE FUNCTION
+const updateOperatorStatus = async (payload: UpdateOperatorStatePayload, token: string) => {
+    // Corrected URL: Removed `/smarte`
+    const url = `${env.NEXT_PUBLIC_BASE_URL}/v1/api/operator/service/block?userId=${payload.userId}&state=${payload.state}`;
+
+    const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.responsedesc || 'Failed to update operator status');
+    }
+
+    return response.json();
+};
+
 interface FetchOperatorsQueryArgs {
     page?: number;
     size?: number;
@@ -31,12 +56,10 @@ export function useOperators(
 
     return useQuery({
         queryKey: ["operators", queryArgs],
-        // The `queryFn` now directly uses the `queryArgs` without casting.
         queryFn: async () => {
             if (!token) {
                 throw new Error("Authentication token is missing.");
             }
-            // Fix: The type of `hierarchyId` now matches the `FetchOperatorsParams` interface.
             return fetchOperators({ ...queryArgs, token });
         },
         enabled: !!token,
@@ -44,38 +67,43 @@ export function useOperators(
     });
 }
 
-interface UpdateOperatorStatusMutationArgs {
-    id: string;
-    status: "ACTIVE" | "INACTIVE";
-}
-
 export function useUpdateOperatorStatus(): UseMutationResult<
     OperatorForUI,
     Error,
-    UpdateOperatorStatusMutationArgs
+    UpdateOperatorStatePayload
 > {
     const queryClient = useQueryClient();
     const { getAccessToken } = useAuth();
 
     return useMutation({
-        mutationFn: async ({ id, status }: UpdateOperatorStatusMutationArgs) => {
+        mutationFn: async (payload: UpdateOperatorStatePayload) => {
             const token = getAccessToken();
             if (!token) {
                 throw new Error("Authentication token is missing.");
             }
-            return updateOperatorStatus(id, status, token);
+            return updateOperatorStatus(payload, token);
         },
         onSuccess: (data, variables) => {
+            // Invalidate the 'operators' query to force a re-fetch and update the UI
             void queryClient.invalidateQueries({ queryKey: ["operators"] });
+
+            // Corrected: Use `data.responsedesc` for the toast message
+            toast.success(`${data.responsedesc}`);
+
+            // This is an optional optimistic update, but invalidation above is more reliable
             queryClient.setQueryData<PaginatedOperators | undefined>(["operators"], (oldData) => {
                 if (!oldData) return oldData;
                 return {
                     ...oldData,
                     content: oldData.content.map((op) =>
-                        op.id === variables.id ? { ...op, status: data.status } : op,
+                        // The backend response doesn't provide the new status, so we have to derive it
+                        op.id === variables.userId ? { ...op, status: variables.state ? 'BLOCKED' : 'ACTIVE' } : op,
                     ),
                 };
             });
+        },
+        onError: (error) => {
+            toast.error(`Failed to update operator status: ${error.message}`);
         },
     });
 }

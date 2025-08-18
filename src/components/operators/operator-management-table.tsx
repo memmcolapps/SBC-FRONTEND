@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -39,17 +39,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/auth-context";
-// Import the updated use-operator hooks which now use the simplified data structure
 import { useOperators, useUpdateOperatorStatus, useEditOperator } from "@/hooks/use-operators";
+import { useBreakers, useAssignBreakers, type AssignBreakersPayload } from "@/hooks/use-breakers";
 import { type OperatorForUI, type CreateOperatorPayload } from "@/services/operator-service";
 import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
+import { type Breaker } from "@/types/breakers";
 
 interface PaginationState {
   page: number;
   size: number;
 }
-
-interface OperatorForUIWithPassword extends OperatorForUI {}
 
 export function OperatorManagementTable() {
   const { user } = useAuth();
@@ -57,9 +57,15 @@ export function OperatorManagementTable() {
     page: 0,
     size: 10,
   });
-  const [editOperator, setEditOperator] = useState<OperatorForUIWithPassword | null>(null);
+  const [editOperator, setEditOperator] = useState<OperatorForUI | null>(null);
   const [formData, setFormData] = useState<CreateOperatorPayload | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isBlockDialogOpen, setIsBlockDialogOpen] = useState(false);
+  const [operatorToBlock, setOperatorToBlock] = useState<OperatorForUI | null>(null);
+  const [isAssignBreakerDialogOpen, setIsAssignBreakerDialogOpen] = useState(false);
+  const [operatorToAssign, setOperatorToAssign] = useState<OperatorForUI | null>(null);
+  const [selectedBreakerIds, setSelectedBreakerIds] = useState<string[]>([]);
+  const [isAllSelected, setIsAllSelected] = useState(false);
 
   const {
     data: operatorsData,
@@ -72,10 +78,30 @@ export function OperatorManagementTable() {
     hierarchyId: user?.hierarchy?.toString(),
   });
 
+  const {
+    data: allBreakers,
+    isLoading: isLoadingBreakers,
+    isError: isErrorBreakers,
+    error: breakersError,
+  } = useBreakers({});
+
   const { mutate: updateStatus, isPending: isUpdating } = useUpdateOperatorStatus();
   const { mutate: editOperatorMutate, isPending: isEditing } = useEditOperator();
+  const { mutate: assignBreakersMutate, isPending: isAssigning } = useAssignBreakers();
 
   const roles = ["READ", "WRITE", "ADMIN"];
+
+  const unassignedBreakers = useMemo(() => {
+    return allBreakers?.filter(breaker => !breaker.operatorId) ?? [];
+  }, [allBreakers]);
+
+  useEffect(() => {
+    if (unassignedBreakers.length > 0 && selectedBreakerIds.length === unassignedBreakers.length) {
+      setIsAllSelected(true);
+    } else {
+      setIsAllSelected(false);
+    }
+  }, [unassignedBreakers, selectedBreakerIds]);
 
   const handlePageChange = (newPage: number) => {
     setPagination((prev) => ({ ...prev, page: newPage }));
@@ -85,45 +111,47 @@ export function OperatorManagementTable() {
     setPagination((prev) => ({ ...prev, size: newSize, page: 0 }));
   };
 
-  const handleToggleStatus = (id: string, currentStatus: "ACTIVE" | "INACTIVE") => {
-    const newStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+  const handleBlockOperator = (operator: OperatorForUI) => {
+    setOperatorToBlock(operator);
+    setIsBlockDialogOpen(true);
+  };
+
+  const handleConfirmBlock = () => {
+    if (!operatorToBlock) return;
+    const newState = operatorToBlock.status === "ACTIVE" ? false : true;
     updateStatus(
-      { id, status: newStatus },
+      { userId: operatorToBlock.id, state: newState },
       {
         onSuccess: () => {
-          toast.success(`Operator status updated to ${newStatus}`);
+          toast.success(`Operator ${newState ? "unblocked" : "blocked"} successfully`);
+          setIsBlockDialogOpen(false);
+          setOperatorToBlock(null);
         },
         onError: (err) => {
-          toast.error("Failed to update operator status: " + err.message);
+          toast.error(`Failed to ${newState ? "unblock" : "block"} operator: ${err.message}`);
+          setIsBlockDialogOpen(false);
+          setOperatorToBlock(null);
         },
       },
     );
   };
 
-  const handleEdit = (operator: OperatorForUIWithPassword) => {
-    console.log("Operator data from API:", operator);
-    console.log("Operator Email:", operator.email);
-    console.log("Operator Contact:", operator.contact);
-    console.log("Operator Password:", operator.password);
-
+  const handleEdit = (operator: OperatorForUI) => {
     const newFormData: CreateOperatorPayload = {
       firstname: operator.firstname ?? "",
       lastname: operator.lastname ?? "",
       email: operator.email ?? "",
-      password: operator.password ?? "",
+      password: "",
       phoneNumber: operator.contact ?? "",
       position: operator.position ?? "",
       location: operator.location ?? "",
       permission: operator.permission ?? true,
-      // Use the single `role` field from the OperatorForUI object
       role: operator.role ?? "READ",
     };
-    
-    console.log("Form data to be set:", newFormData);
 
     setFormData(newFormData);
     setEditOperator(operator);
-    setIsDialogOpen(true);
+    setIsEditDialogOpen(true);
   };
 
   const handleEditSubmit = (e: React.FormEvent) => {
@@ -133,8 +161,6 @@ export function OperatorManagementTable() {
       return;
     }
 
-    console.log("Updating operator with data:", formData);
-
     editOperatorMutate(
       { id: editOperator.id, payload: formData },
       {
@@ -142,12 +168,65 @@ export function OperatorManagementTable() {
           toast.success("Operator updated successfully!");
           setEditOperator(null);
           setFormData(null);
-          setIsDialogOpen(false);
+          setIsEditDialogOpen(false);
         },
         onError: (err) => {
           toast.error("Failed to update operator: " + err.message);
         },
       },
+    );
+  };
+
+  const handleAssignBreaker = (operator: OperatorForUI) => {
+    setOperatorToAssign(operator);
+    setSelectedBreakerIds([]);
+    setIsAssignBreakerDialogOpen(true);
+  };
+
+  const handleSelectBreaker = (breakerId: string) => {
+    setSelectedBreakerIds((prev) =>
+      prev.includes(breakerId)
+        ? prev.filter((id) => id !== breakerId)
+        : [...prev, breakerId]
+    );
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allUnassignedBreakerIds = unassignedBreakers.map(breaker => breaker.id);
+      setSelectedBreakerIds(allUnassignedBreakerIds);
+    } else {
+      setSelectedBreakerIds([]);
+    }
+  };
+
+  const handleAssignSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!operatorToAssign || selectedBreakerIds.length === 0) {
+      toast.error("Please select at least one breaker to assign.");
+      return;
+    }
+
+    const payload: AssignBreakersPayload = {
+      userId: operatorToAssign.id,
+      access: true,
+      sbcIds: selectedBreakerIds,
+    };
+
+    assignBreakersMutate(
+      payload,
+      {
+        onSuccess: () => {
+          setIsAssignBreakerDialogOpen(false);
+          setOperatorToAssign(null);
+          setSelectedBreakerIds([]);
+          setIsAllSelected(false);
+          toast.success("Breakers assigned successfully!");
+        },
+        onError: (err) => {
+          toast.error("Failed to assign breakers: " + err.message);
+        },
+      }
     );
   };
 
@@ -202,17 +281,23 @@ export function OperatorManagementTable() {
           </TableHeader>
           <TableBody>
             {operatorsData?.content && operatorsData.content.length > 0 ? (
-              operatorsData.content.map((operator: OperatorForUIWithPassword) => (
-                <TableRow key={operator.id || "N/A"}>
+              operatorsData.content.map((operator: OperatorForUI) => (
+                <TableRow 
+                  key={operator.id || "N/A"} 
+                  className={operator.status === "BLOCKED" ? "bg-gray-100 opacity-50" : ""}
+                >
                   <TableCell>{`${operator.firstname} ${operator.lastname}`}</TableCell>
                   <TableCell>{operator.email || "N/A"}</TableCell>
                   <TableCell>{operator.contact || "N/A"}</TableCell>
                   <TableCell>{operator.position || "N/A"}</TableCell>
-                  {/* Now correctly using the single `role` field */}
                   <TableCell>{operator.role ?? "N/A"}</TableCell>
                   <TableCell>
                     <Badge
-                      variant={operator.status === "ACTIVE" ? "default" : "secondary"}
+                      className={
+                        operator.status === "ACTIVE"
+                          ? "bg-green-500 text-white"
+                          : "bg-red-500 text-white"
+                      }
                     >
                       {operator.status}
                     </Badge>
@@ -225,17 +310,33 @@ export function OperatorManagementTable() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => handleToggleStatus(operator.id, operator.status)}
-                          disabled={isUpdating}
-                        >
-                          {operator.status === "ACTIVE" ? "Deactivate" : "Activate"}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleEdit(operator)}
-                        >
-                          Edit
-                        </DropdownMenuItem>
+                        {operator.status === "BLOCKED" ? (
+                          <DropdownMenuItem
+                            onClick={() => handleBlockOperator(operator)}
+                            disabled={isUpdating}
+                          >
+                            Unblock
+                          </DropdownMenuItem>
+                        ) : (
+                          <>
+                            <DropdownMenuItem
+                              onClick={() => handleBlockOperator(operator)}
+                              disabled={isUpdating}
+                            >
+                              Block
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleEdit(operator)}
+                            >
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleAssignBreaker(operator)}
+                            >
+                              Assign Breaker
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -282,10 +383,10 @@ export function OperatorManagementTable() {
       )}
 
       {editOperator && formData && (
-        <Dialog open={isDialogOpen} onOpenChange={() => {
+        <Dialog open={isEditDialogOpen} onOpenChange={() => {
           setEditOperator(null);
           setFormData(null);
-          setIsDialogOpen(false);
+          setIsEditDialogOpen(false);
         }}>
           <DialogContent className="sm:max-w-[425px] h-fit bg-white">
             <DialogHeader>
@@ -385,7 +486,7 @@ export function OperatorManagementTable() {
                 <Button type="button" variant="outline" onClick={() => {
                   setEditOperator(null);
                   setFormData(null);
-                  setIsDialogOpen(false);
+                  setIsEditDialogOpen(false);
                 }}>
                   Cancel
                 </Button>
@@ -395,6 +496,137 @@ export function OperatorManagementTable() {
                 </Button>
               </DialogFooter>
             </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {operatorToAssign && (
+        <Dialog open={isAssignBreakerDialogOpen} onOpenChange={() => {
+          setIsAssignBreakerDialogOpen(false);
+          setOperatorToAssign(null);
+          setSelectedBreakerIds([]);
+          setIsAllSelected(false);
+        }}>
+          <DialogContent className="sm:max-w-[600px] h-fit bg-white">
+            <DialogHeader>
+              <DialogTitle>Assign Breaker to {operatorToAssign.firstname} {operatorToAssign.lastname}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleAssignSubmit} className="space-y-4">
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[50px] text-center">
+                        <Checkbox
+                          checked={isAllSelected}
+                          onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                          disabled={unassignedBreakers.length === 0}
+                        />
+                      </TableHead>
+                      <TableHead>Breaker Name</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoadingBreakers ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="py-8 text-center">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="ml-2">Loading breakers...</span>
+                        </TableCell>
+                      </TableRow>
+                    ) : isErrorBreakers ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="py-8 text-center text-red-500">
+                          Error: {breakersError?.message}
+                        </TableCell>
+                      </TableRow>
+                    ) : unassignedBreakers.length > 0 ? (
+                      unassignedBreakers.map((breaker: Breaker) => (
+                        <TableRow key={breaker.id}>
+                          <TableCell className="w-[50px] text-center">
+                            <Checkbox
+                              checked={selectedBreakerIds.includes(breaker.id)}
+                              onCheckedChange={() => handleSelectBreaker(breaker.id)}
+                            />
+                          </TableCell>
+                          <TableCell>{breaker.name}</TableCell>
+                          <TableCell>
+                            {breaker.city}, {breaker.state}, {breaker.streetName}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={breaker.status === "ACTIVE" ? "default" : "secondary"}>
+                              {breaker.status}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="py-8 text-center">
+                          No unassigned breakers available.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => {
+                  setIsAssignBreakerDialogOpen(false);
+                  setOperatorToAssign(null);
+                  setSelectedBreakerIds([]);
+                  setIsAllSelected(false);
+                }}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isAssigning || selectedBreakerIds.length === 0}>
+                  {isAssigning ? <Loader2 size={14} className="h-4 w-4 animate-spin" /> : null}
+                  {isAssigning ? "Assigning..." : `Assign (${selectedBreakerIds.length})`}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {operatorToBlock && (
+        <Dialog open={isBlockDialogOpen} onOpenChange={() => {
+          setIsBlockDialogOpen(false);
+          setOperatorToBlock(null);
+        }}>
+          <DialogContent className="sm:max-w-[425px] h-fit bg-white">
+            <DialogHeader>
+              <DialogTitle>
+                {operatorToBlock.status === "ACTIVE" ? "Block Operator" : "Unblock Operator"}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p>
+                Are you sure you want to {operatorToBlock.status === "ACTIVE" ? "block" : "unblock"} {operatorToBlock.firstname} {operatorToBlock.lastname}?
+              </p>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsBlockDialogOpen(false);
+                  setOperatorToBlock(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleConfirmBlock}
+                disabled={isUpdating}
+              >
+                {isUpdating ? <Loader2 size={14} className="h-4 w-4 animate-spin" /> : null}
+                {operatorToBlock.status === "ACTIVE" ? "Block" : "Unblock"}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       )}

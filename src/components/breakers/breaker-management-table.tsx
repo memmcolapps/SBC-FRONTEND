@@ -14,13 +14,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useBreakers } from "@/hooks/use-breakers";
 import { Skeleton } from "@/components/ui/skeleton";
 import { type Breaker } from "@/types/breakers";
-import React from "react"; // Import React to use React.Fragment
+import React from "react";
 
+// The status property here must match the capitalization in the Breaker interface
 interface ExpandedBreaker extends Breaker {
   isExpanded: boolean;
   buttons: Record<string, boolean>;
   lastAction?: string;
-  status: "Active" | "Inactive";
+  status: "ACTIVE" | "INACTIVE"; // Corrected capitalization
 }
 
 export function BreakerManagementTable() {
@@ -43,18 +44,19 @@ export function BreakerManagementTable() {
       const localData = localModifications[breaker.id] ?? {};
       return {
         ...breaker,
-        isExpanded: false,
-        status: "Inactive",
-        lastAction: "No recent actions",
-        buttons: {
+        isExpanded: localData.isExpanded ?? false,
+        // Default status is now correctly capitalized to "INACTIVE"
+        status: localData.status ?? "INACTIVE",
+        lastAction: localData.lastAction ?? "No recent actions",
+        buttons: localData.buttons ?? {
           B1: false,
           B2: false,
           B3: false,
           B4: false,
+          // Correctly checks breakerCount for buttons B5 and B6
           B5: breaker.breakerCount > 4,
           B6: breaker.breakerCount > 5,
         },
-        ...localData,
       };
     });
   }, [data, localModifications]);
@@ -86,17 +88,12 @@ export function BreakerManagementTable() {
         ...prev,
         [id]: {
           ...current,
-          status: newButtonState ? "Active" : "Inactive",
+          // Corrected status to use "ACTIVE" or "INACTIVE"
+          status: newButtonState ? "ACTIVE" : "INACTIVE",
           lastAction: `Button ${buttonId} turned ${newButtonState ? "ON" : "OFF"} (just now)`,
           buttons: {
-            ...(current.buttons ?? {
-              B1: false,
-              B2: false,
-              B3: false,
-              B4: false,
-              B5: (data.find((b) => b.id === id)?.breakerCount ?? 0) > 4,
-              B6: (data.find((b) => b.id === id)?.breakerCount ?? 0) > 5,
-            }),
+            // Retain existing button states, but update the selected one
+            ...(current.buttons ?? {}),
             [buttonId]: newButtonState,
           },
         },
@@ -108,21 +105,22 @@ export function BreakerManagementTable() {
     setLocalModifications((prev) => {
       const updates: Record<string, Partial<ExpandedBreaker>> = {};
       selectedBreakers.forEach((id) => {
-        updates[id] = {
-          ...prev[id],
-          status: "Active",
-          lastAction: "Turned on (just now)",
-          buttons: Object.fromEntries(
-            Object.entries({
+        const breakerData = breakers.find(b => b.id === id);
+        if (breakerData) {
+          updates[id] = {
+            ...prev[id],
+            // Corrected status to use "ACTIVE"
+            status: "ACTIVE",
+            lastAction: "Turned on (just now)",
+            buttons: {
+              ...breakerData.buttons, // Start with the existing button states
               B1: true,
               B2: true,
               B3: true,
               B4: true,
-              B5: (data.find((b) => b.id === id)?.breakerCount ?? 0) > 4,
-              B6: (data.find((b) => b.id === id)?.breakerCount ?? 0) > 5,
-            }).filter(([key]) => key in (prev[id]?.buttons ?? {})),
-          ),
-        };
+            },
+          };
+        }
       });
       return { ...prev, ...updates };
     });
@@ -132,23 +130,22 @@ export function BreakerManagementTable() {
     setLocalModifications((prev) => {
       const updates: Record<string, Partial<ExpandedBreaker>> = {};
       selectedBreakers.forEach((id) => {
-        updates[id] = {
-          ...prev[id],
-          status: "Inactive",
-          lastAction: "Turned off (just now)",
-          buttons: Object.fromEntries(
-            Object.keys(
-              prev[id]?.buttons ?? {
-                B1: false,
-                B2: false,
-                B3: false,
-                B4: false,
-                B5: (data.find((b) => b.id === id)?.breakerCount ?? 0) > 4,
-                B6: (data.find((b) => b.id === id)?.breakerCount ?? 0) > 5,
-              },
-            ).map((key) => [key, false]),
-          ),
-        };
+        const breakerData = breakers.find(b => b.id === id);
+        if (breakerData) {
+          updates[id] = {
+            ...prev[id],
+            // Corrected status to use "INACTIVE"
+            status: "INACTIVE",
+            lastAction: "Turned off (just now)",
+            buttons: {
+              ...breakerData.buttons,
+              B1: false,
+              B2: false,
+              B3: false,
+              B4: false,
+            },
+          };
+        }
       });
       return { ...prev, ...updates };
     });
@@ -211,10 +208,8 @@ export function BreakerManagementTable() {
           </TableHeader>
           <TableBody>
             {breakers.map((breaker) => (
-              // --- KEY ADDED TO REACT.FRAGMENT ---
               <React.Fragment key={breaker.id}>
                 <TableRow
-                  // No need for key here, as the parent Fragment has it
                   className="cursor-pointer hover:bg-gray-50"
                   onClick={() => toggleExpandBreaker(breaker.id)}
                 >
@@ -232,7 +227,7 @@ export function BreakerManagementTable() {
                   </TableCell>
                   <TableCell>
                     <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${breaker.status === "Active"
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${breaker.status === "ACTIVE"
                           ? "bg-green-100 text-green-800"
                           : "bg-red-100 text-red-800"
                         }`}
@@ -253,7 +248,7 @@ export function BreakerManagementTable() {
                           .filter(([_, show]) => show)
                           .map(([btnId, isActive]) => (
                             <Button
-                              key={btnId} // This key was already correct
+                              key={btnId}
                               variant={isActive ? "default" : "outline"}
                               className={
                                 isActive
