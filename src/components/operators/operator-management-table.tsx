@@ -64,7 +64,7 @@ export function OperatorManagementTable() {
   const [operatorToBlock, setOperatorToBlock] = useState<OperatorForUI | null>(null);
   const [isAssignBreakerDialogOpen, setIsAssignBreakerDialogOpen] = useState(false);
   const [operatorToAssign, setOperatorToAssign] = useState<OperatorForUI | null>(null);
-  const [selectedBreakerIds, setSelectedBreakerIds] = useState<string[]>([]);
+  const [selectedBreakerSbcIds, setSelectedBreakerSbcIds] = useState<string[]>([]);
   const [isAllSelected, setIsAllSelected] = useState(false);
 
   const {
@@ -91,28 +91,28 @@ export function OperatorManagementTable() {
 
   const roles = ["READ", "WRITE", "ADMIN"];
 
-  // FIX: Use a useMemo hook to filter for unique and unassigned breakers.
+  // Use useMemo to get unique and unassigned breakers
   const unassignedBreakers = useMemo(() => {
     if (!allBreakers) return [];
 
-    const seenIds = new Set<string>();
+    const seenSbcIds = new Set<string>();
     return allBreakers.filter((breaker) => {
-      // Exclude breakers with an assigned operator and filter out duplicates.
-      if (breaker.operatorId || seenIds.has(breaker.id)) {
+      // Filter out breakers with an assigned operator and filter out duplicates using sbcId.
+      if (breaker.operatorId || seenSbcIds.has(breaker.sbcId)) {
         return false;
       }
-      seenIds.add(breaker.id);
+      seenSbcIds.add(breaker.sbcId);
       return true;
     });
   }, [allBreakers]);
 
   useEffect(() => {
-    if (unassignedBreakers.length > 0 && selectedBreakerIds.length === unassignedBreakers.length) {
+    if (unassignedBreakers.length > 0 && selectedBreakerSbcIds.length === unassignedBreakers.length) {
       setIsAllSelected(true);
     } else {
       setIsAllSelected(false);
     }
-  }, [unassignedBreakers, selectedBreakerIds]);
+  }, [unassignedBreakers, selectedBreakerSbcIds]);
 
   const handlePageChange = (newPage: number) => {
     setPagination((prev) => ({ ...prev, page: newPage }));
@@ -190,30 +190,30 @@ export function OperatorManagementTable() {
 
   const handleAssignBreaker = (operator: OperatorForUI) => {
     setOperatorToAssign(operator);
-    setSelectedBreakerIds([]);
+    setSelectedBreakerSbcIds([]);
     setIsAssignBreakerDialogOpen(true);
   };
 
-  const handleSelectBreaker = (breakerId: string) => {
-    setSelectedBreakerIds((prev) =>
-      prev.includes(breakerId)
-        ? prev.filter((id) => id !== breakerId)
-        : [...prev, breakerId]
+  const handleSelectBreaker = (sbcId: string) => {
+    setSelectedBreakerSbcIds((prev) =>
+      prev.includes(sbcId)
+        ? prev.filter((id) => id !== sbcId)
+        : [...prev, sbcId]
     );
   };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const allUnassignedBreakerIds = unassignedBreakers.map(breaker => breaker.id);
-      setSelectedBreakerIds(allUnassignedBreakerIds);
+      const allUnassignedBreakerSbcIds = unassignedBreakers.map(breaker => breaker.sbcId);
+      setSelectedBreakerSbcIds(allUnassignedBreakerSbcIds);
     } else {
-      setSelectedBreakerIds([]);
+      setSelectedBreakerSbcIds([]);
     }
   };
 
   const handleAssignSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!operatorToAssign || selectedBreakerIds.length === 0) {
+    if (!operatorToAssign || selectedBreakerSbcIds.length === 0) {
       toast.error("Please select at least one breaker to assign.");
       return;
     }
@@ -221,7 +221,7 @@ export function OperatorManagementTable() {
     const payload: AssignBreakersPayload = {
       userId: operatorToAssign.id,
       access: true,
-      sbcIds: selectedBreakerIds,
+      sbcIds: selectedBreakerSbcIds,
     };
 
     assignBreakersMutate(
@@ -230,7 +230,7 @@ export function OperatorManagementTable() {
         onSuccess: () => {
           setIsAssignBreakerDialogOpen(false);
           setOperatorToAssign(null);
-          setSelectedBreakerIds([]);
+          setSelectedBreakerSbcIds([]);
           setIsAllSelected(false);
           toast.success("Breakers assigned successfully!");
         },
@@ -515,7 +515,7 @@ export function OperatorManagementTable() {
         <Dialog open={isAssignBreakerDialogOpen} onOpenChange={() => {
           setIsAssignBreakerDialogOpen(false);
           setOperatorToAssign(null);
-          setSelectedBreakerIds([]);
+          setSelectedBreakerSbcIds([]);
           setIsAllSelected(false);
         }}>
           <DialogContent className="sm:max-w-[600px] h-fit bg-white">
@@ -555,11 +555,11 @@ export function OperatorManagementTable() {
                       </TableRow>
                     ) : unassignedBreakers.length > 0 ? (
                       unassignedBreakers.map((breaker: Breaker) => (
-                        <TableRow key={breaker.id}>
+                        <TableRow key={breaker.sbcId}>
                           <TableCell className="w-[50px] text-center">
                             <Checkbox
-                              checked={selectedBreakerIds.includes(breaker.id)}
-                              onCheckedChange={() => handleSelectBreaker(breaker.id)}
+                              checked={selectedBreakerSbcIds.includes(breaker.sbcId)}
+                              onCheckedChange={() => handleSelectBreaker(breaker.sbcId)}
                             />
                           </TableCell>
                           <TableCell>{breaker.name}</TableCell>
@@ -587,14 +587,14 @@ export function OperatorManagementTable() {
                 <Button type="button" variant="outline" onClick={() => {
                   setIsAssignBreakerDialogOpen(false);
                   setOperatorToAssign(null);
-                  setSelectedBreakerIds([]);
+                  setSelectedBreakerSbcIds([]);
                   setIsAllSelected(false);
                 }}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isAssigning || selectedBreakerIds.length === 0}>
+                <Button type="submit" disabled={isAssigning || selectedBreakerSbcIds.length === 0}>
                   {isAssigning ? <Loader2 size={14} className="h-4 w-4 animate-spin" /> : null}
-                  {isAssigning ? "Assigning..." : `Assign (${selectedBreakerIds.length})`}
+                  {isAssigning ? "Assigning..." : `Assign (${selectedBreakerSbcIds.length})`}
                 </Button>
               </DialogFooter>
             </form>
