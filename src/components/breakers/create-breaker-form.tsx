@@ -1,5 +1,3 @@
-// src/components/create-breaker-form.tsx
-
 "use client";
 
 import type React from "react";
@@ -28,9 +26,13 @@ interface FormData {
   assetId: string;
 }
 
-const numberOfBreakersOptions = ["1", "2", "3", "4", "5", "6"];
+interface CreateSBCFormProps {
+  onSuccess: () => void;
+}
 
-export function CreateBreakerForm() {
+const numberOfBreakersOptions = [ "4", "6"];
+
+export function CreateBreakerForm({ onSuccess }: CreateSBCFormProps) {
   const [formData, setFormData] = useState<FormData>({
     sbcId: "",
     stateId: "",
@@ -78,6 +80,8 @@ export function CreateBreakerForm() {
           breakerCounter: "",
           assetId: "",
         });
+        // Correctly call onSuccess here to close the dialog after a successful API call
+        onSuccess();
       },
       onError: (error) => {
         console.error("Error registering breaker:", error);
@@ -100,6 +104,8 @@ export function CreateBreakerForm() {
       cityId: value,
     }));
   };
+
+  const isFormValid = formData.sbcId && formData.stateId && formData.cityId && formData.streetName && formData.name && formData.breakerCounter && formData.assetId;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -134,7 +140,6 @@ export function CreateBreakerForm() {
             <SelectValue placeholder={isLoadingStates ? "Loading states..." : "Select State"} />
           </SelectTrigger>
           <SelectContent>
-            {/* Changed value from "" to a unique, non-empty string */}
             {isErrorStates && <SelectItem value="error-states" disabled>Error loading states</SelectItem>}
             {!isLoadingStates && states?.length === 0 && <SelectItem value="no-states-found" disabled>No states found</SelectItem>}
             {states?.map((state) => (
@@ -169,7 +174,6 @@ export function CreateBreakerForm() {
             />
           </SelectTrigger>
           <SelectContent>
-            {/* Changed value from "" to a unique, non-empty string */}
             {isErrorCities && <SelectItem value="error-cities" disabled>Error loading cities</SelectItem>}
             {!isLoadingCities && cities?.length === 0 && formData.stateId && (
               <SelectItem value="no-cities-found" disabled>No cities found for this state</SelectItem>
@@ -254,14 +258,15 @@ export function CreateBreakerForm() {
           className="text-lg"
         />
       </div>
-
-      <Button
-        type="submit"
-        className="bg-purple-600 hover:bg-purple-700"
-        disabled={isPending || isLoadingStates || isLoadingCities}
-      >
-        {isPending ? "Creating Breaker..." : "Create Breaker"}
-      </Button>
+      <div className="flex justify-end">
+        <Button
+          type="submit"
+          className="bg-purple-600 hover:bg-purple-700"
+          disabled={isPending || isLoadingStates || isLoadingCities || !isFormValid}
+        >
+          {isPending ? "Creating Breaker..." : "Create Breaker"}
+        </Button>
+      </div>
     </form>
   );
 }

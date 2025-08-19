@@ -14,13 +14,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useBreakers } from "@/hooks/use-breakers";
 import { Skeleton } from "@/components/ui/skeleton";
 import { type Breaker } from "@/types/breakers";
-import React from "react"; // Import React to use React.Fragment
+import React from "react";
 
 interface ExpandedBreaker extends Breaker {
   isExpanded: boolean;
   buttons: Record<string, boolean>;
   lastAction?: string;
-  status: "Active" | "Inactive";
+  status: "ACTIVE" | "INACTIVE";
 }
 
 export function BreakerManagementTable() {
@@ -37,16 +37,23 @@ export function BreakerManagementTable() {
     size: 10,
   });
 
-  // Combine API data with local modifications
+  // Combine API data with local modifications and **deduplicate**
   const breakers = useMemo(() => {
-    return data.map((breaker) => {
-      const localData = localModifications[breaker.id] ?? {};
+    const uniqueBreakers = new Map<string, Breaker>();
+    data.forEach(breaker => {
+        if (!uniqueBreakers.has(breaker.sbcId)) {
+            uniqueBreakers.set(breaker.sbcId, breaker);
+        }
+    });
+
+    return Array.from(uniqueBreakers.values()).map((breaker) => {
+      const localData = localModifications[breaker.sbcId] ?? {};
       return {
         ...breaker,
-        isExpanded: false,
-        status: "Inactive",
-        lastAction: "No recent actions",
-        buttons: {
+        isExpanded: localData.isExpanded ?? false,
+        status: localData.status ?? "INACTIVE",
+        lastAction: localData.lastAction ?? "No recent actions",
+        buttons: localData.buttons ?? {
           B1: false,
           B2: false,
           B3: false,
@@ -54,49 +61,41 @@ export function BreakerManagementTable() {
           B5: breaker.breakerCount > 4,
           B6: breaker.breakerCount > 5,
         },
-        ...localData,
       };
     });
   }, [data, localModifications]);
 
-  const toggleBreaker = (id: string) => {
+  const toggleBreaker = (sbcId: string) => {
     setSelectedBreakers((prev) =>
-      prev.includes(id)
-        ? prev.filter((breakerId) => breakerId !== id)
-        : [...prev, id],
+      prev.includes(sbcId)
+        ? prev.filter((breakerSbcId) => breakerSbcId !== sbcId)
+        : [...prev, sbcId],
     );
   };
 
-  const toggleExpandBreaker = (id: string) => {
+  const toggleExpandBreaker = (sbcId: string) => {
     setLocalModifications((prev) => ({
       ...prev,
-      [id]: {
-        ...prev[id],
-        isExpanded: !(prev[id]?.isExpanded ?? false),
+      [sbcId]: {
+        ...prev[sbcId],
+        isExpanded: !(prev[sbcId]?.isExpanded ?? false),
       },
     }));
   };
 
-  const toggleButton = (id: string, buttonId: string) => {
+  const toggleButton = (sbcId: string, buttonId: string) => {
     setLocalModifications((prev) => {
-      const current = prev[id] ?? {};
+      const current = prev[sbcId] ?? {};
       const newButtonState = !(current.buttons?.[buttonId] ?? false);
 
       return {
         ...prev,
-        [id]: {
+        [sbcId]: {
           ...current,
-          status: newButtonState ? "Active" : "Inactive",
+          status: newButtonState ? "ACTIVE" : "INACTIVE",
           lastAction: `Button ${buttonId} turned ${newButtonState ? "ON" : "OFF"} (just now)`,
           buttons: {
-            ...(current.buttons ?? {
-              B1: false,
-              B2: false,
-              B3: false,
-              B4: false,
-              B5: (data.find((b) => b.id === id)?.breakerCount ?? 0) > 4,
-              B6: (data.find((b) => b.id === id)?.breakerCount ?? 0) > 5,
-            }),
+            ...(current.buttons ?? {}),
             [buttonId]: newButtonState,
           },
         },
@@ -107,22 +106,22 @@ export function BreakerManagementTable() {
   const handleTurnOn = () => {
     setLocalModifications((prev) => {
       const updates: Record<string, Partial<ExpandedBreaker>> = {};
-      selectedBreakers.forEach((id) => {
-        updates[id] = {
-          ...prev[id],
-          status: "Active",
-          lastAction: "Turned on (just now)",
-          buttons: Object.fromEntries(
-            Object.entries({
+      selectedBreakers.forEach((sbcId) => {
+        const breakerData = breakers.find(b => b.sbcId === sbcId);
+        if (breakerData) {
+          updates[sbcId] = {
+            ...prev[sbcId],
+            status: "ACTIVE",
+            lastAction: "Turned on (just now)",
+            buttons: {
+              ...breakerData.buttons,
               B1: true,
               B2: true,
               B3: true,
               B4: true,
-              B5: (data.find((b) => b.id === id)?.breakerCount ?? 0) > 4,
-              B6: (data.find((b) => b.id === id)?.breakerCount ?? 0) > 5,
-            }).filter(([key]) => key in (prev[id]?.buttons ?? {})),
-          ),
-        };
+            },
+          };
+        }
       });
       return { ...prev, ...updates };
     });
@@ -131,24 +130,22 @@ export function BreakerManagementTable() {
   const handleTurnOff = () => {
     setLocalModifications((prev) => {
       const updates: Record<string, Partial<ExpandedBreaker>> = {};
-      selectedBreakers.forEach((id) => {
-        updates[id] = {
-          ...prev[id],
-          status: "Inactive",
-          lastAction: "Turned off (just now)",
-          buttons: Object.fromEntries(
-            Object.keys(
-              prev[id]?.buttons ?? {
-                B1: false,
-                B2: false,
-                B3: false,
-                B4: false,
-                B5: (data.find((b) => b.id === id)?.breakerCount ?? 0) > 4,
-                B6: (data.find((b) => b.id === id)?.breakerCount ?? 0) > 5,
-              },
-            ).map((key) => [key, false]),
-          ),
-        };
+      selectedBreakers.forEach((sbcId) => {
+        const breakerData = breakers.find(b => b.sbcId === sbcId);
+        if (breakerData) {
+          updates[sbcId] = {
+            ...prev[sbcId],
+            status: "INACTIVE",
+            lastAction: "Turned off (just now)",
+            buttons: {
+              ...breakerData.buttons,
+              B1: false,
+              B2: false,
+              B3: false,
+              B4: false,
+            },
+          };
+        }
       });
       return { ...prev, ...updates };
     });
@@ -211,17 +208,15 @@ export function BreakerManagementTable() {
           </TableHeader>
           <TableBody>
             {breakers.map((breaker) => (
-              // --- KEY ADDED TO REACT.FRAGMENT ---
-              <React.Fragment key={breaker.id}>
+              <React.Fragment key={breaker.sbcId}>
                 <TableRow
-                  // No need for key here, as the parent Fragment has it
                   className="cursor-pointer hover:bg-gray-50"
-                  onClick={() => toggleExpandBreaker(breaker.id)}
+                  onClick={() => toggleExpandBreaker(breaker.sbcId)}
                 >
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <Checkbox
-                      checked={selectedBreakers.includes(breaker.id)}
-                      onCheckedChange={() => toggleBreaker(breaker.id)}
+                      checked={selectedBreakers.includes(breaker.sbcId)}
+                      onCheckedChange={() => toggleBreaker(breaker.sbcId)}
                     />
                   </TableCell>
                   <TableCell>{breaker.sbcId}</TableCell>
@@ -232,7 +227,7 @@ export function BreakerManagementTable() {
                   </TableCell>
                   <TableCell>
                     <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${breaker.status === "Active"
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${breaker.status === "ACTIVE"
                           ? "bg-green-100 text-green-800"
                           : "bg-red-100 text-red-800"
                         }`}
@@ -253,14 +248,14 @@ export function BreakerManagementTable() {
                           .filter(([_, show]) => show)
                           .map(([btnId, isActive]) => (
                             <Button
-                              key={btnId} // This key was already correct
+                              key={btnId}
                               variant={isActive ? "default" : "outline"}
                               className={
                                 isActive
                                   ? "bg-green-600 hover:bg-green-700"
                                   : "hover:bg-gray-200"
                               }
-                              onClick={() => toggleButton(breaker.id, btnId)}
+                              onClick={() => toggleButton(breaker.sbcId, btnId)}
                             >
                               {btnId}
                             </Button>

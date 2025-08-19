@@ -3,7 +3,6 @@ import {
   Bell,
   FileText,
   Grid,
-  Users,
   LogOut,
   UserRoundPen,
   LayoutDashboard,
@@ -38,11 +37,6 @@ const navItems: NavItem[] = [
     title: "Dashboard",
     href: "/dashboard",
     icon: <LayoutDashboard size={20} className="shrink-0" />,
-  },
-  {
-    title: "Organizational Management",
-    href: "/organization",
-    icon: <Users size={20} />,
   },
   {
     title: "Operator Management",
