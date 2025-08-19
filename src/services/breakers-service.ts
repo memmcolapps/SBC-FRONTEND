@@ -140,6 +140,8 @@ export const assignBreakers = async (
   token: string,
 ): Promise<void> => {
   try {
+    const baseUrl = API_BASE_URL.endsWith("/") ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+
     const response = await axios.put(
       `${API_BASE_URL}/v1/api/breaker/service/assign`,
       payload,
@@ -152,21 +154,31 @@ export const assignBreakers = async (
     );
 
     const apiResponse = response.data;
-    // Check for the specific backend response code
+
+    // Check for success code
     if (apiResponse.responsecode !== "000") {
-      // Throw an error with the specific message from the backend
       throw new Error(apiResponse.responsedesc || "Unexpected response code from backend.");
     }
+
+    // Check if there were any failures in the assignment process
+    if (apiResponse.responsedata?.failures?.length > 0) {
+      // Create a more detailed error message for the user
+      const failureMessage = apiResponse.responsedata.failures.join(", ");
+      throw new Error(`Assignment partially failed. Details: ${failureMessage}`);
+    }
+
   } catch (error: unknown) {
     console.error("Assign Breakers Error:", error);
 
-    // Check if the error is an AxiosError and if it has a response with data
     if (axios.isAxiosError(error) && error.response?.data?.responsedesc) {
-      // If the backend provides a specific message, throw that
       throw new Error(error.response.data.responsedesc);
     }
 
-    // Otherwise, use the generic API error handler
+    // Pass on the detailed error message from the try block or handle generic errors
+    if (error instanceof Error) {
+      throw error;
+    }
+
     throw new Error(handleApiError(error));
   }
 };

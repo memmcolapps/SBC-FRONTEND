@@ -91,8 +91,19 @@ export function OperatorManagementTable() {
 
   const roles = ["READ", "WRITE", "ADMIN"];
 
+  // FIX: Use a useMemo hook to filter for unique and unassigned breakers.
   const unassignedBreakers = useMemo(() => {
-    return allBreakers?.filter(breaker => !breaker.operatorId) ?? [];
+    if (!allBreakers) return [];
+
+    const seenIds = new Set<string>();
+    return allBreakers.filter((breaker) => {
+      // Exclude breakers with an assigned operator and filter out duplicates.
+      if (breaker.operatorId || seenIds.has(breaker.id)) {
+        return false;
+      }
+      seenIds.add(breaker.id);
+      return true;
+    });
   }, [allBreakers]);
 
   useEffect(() => {
@@ -282,8 +293,8 @@ export function OperatorManagementTable() {
           <TableBody>
             {operatorsData?.content && operatorsData.content.length > 0 ? (
               operatorsData.content.map((operator: OperatorForUI) => (
-                <TableRow 
-                  key={operator.id || "N/A"} 
+                <TableRow
+                  key={operator.id || "N/A"}
                   className={operator.status === "BLOCKED" ? "bg-gray-100 opacity-50" : ""}
                 >
                   <TableCell>{`${operator.firstname} ${operator.lastname}`}</TableCell>

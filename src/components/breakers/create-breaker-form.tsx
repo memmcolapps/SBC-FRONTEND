@@ -30,7 +30,7 @@ interface CreateSBCFormProps {
   onSuccess: () => void;
 }
 
-const numberOfBreakersOptions = ["1", "2", "3", "4", "5", "6"];
+const numberOfBreakersOptions = [ "4", "6"];
 
 export function CreateBreakerForm({ onSuccess }: CreateSBCFormProps) {
   const [formData, setFormData] = useState<FormData>({
