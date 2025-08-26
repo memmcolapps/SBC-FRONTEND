@@ -66,6 +66,9 @@ export function OperatorManagementTable() {
   const [operatorToAssign, setOperatorToAssign] = useState<OperatorForUI | null>(null);
   const [selectedBreakerSbcIds, setSelectedBreakerSbcIds] = useState<string[]>([]);
   const [isAllSelected, setIsAllSelected] = useState(false);
+  // NEW STATE FOR DETAILS DIALOG
+  const [selectedOperatorForDetails, setSelectedOperatorForDetails] = useState<OperatorForUI | null>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
 
   const {
     data: operatorsData,
@@ -241,6 +244,12 @@ export function OperatorManagementTable() {
     );
   };
 
+  // NEW HANDLER FOR VIEWING DETAILS
+  const handleViewDetails = (operator: OperatorForUI) => {
+    setSelectedOperatorForDetails(operator);
+    setIsDetailsDialogOpen(true);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -295,7 +304,10 @@ export function OperatorManagementTable() {
               operatorsData.content.map((operator: OperatorForUI) => (
                 <TableRow
                   key={operator.id || "N/A"}
-                  className={operator.status === "BLOCKED" ? "bg-gray-100 opacity-50" : ""}
+                  className={`cursor-pointer ${
+                    operator.status === "BLOCKED" ? "bg-gray-100 opacity-50" : ""
+                  }`}
+                  onClick={() => handleViewDetails(operator)}
                 >
                   <TableCell>{`${operator.firstname} ${operator.lastname}`}</TableCell>
                   <TableCell>{operator.email || "N/A"}</TableCell>
@@ -313,14 +325,17 @@ export function OperatorManagementTable() {
                       {operator.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm">
-                          <MoreVertical className="h-4 w-4" />
+                          <MoreVertical className="h-4 w-4" size={16} />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleViewDetails(operator)}>
+                          View
+                        </DropdownMenuItem>
                         {operator.status === "BLOCKED" ? (
                           <DropdownMenuItem
                             onClick={() => handleBlockOperator(operator)}
@@ -391,6 +406,63 @@ export function OperatorManagementTable() {
             </Button>
           </div>
         </div>
+      )}
+
+      {/* View Details Dialog */}
+      {selectedOperatorForDetails && (
+        <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+          <DialogContent className="sm:max-w-[425px] h-fit bg-white">
+            <DialogHeader>
+              <DialogTitle>Operator Details</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4 text-sm">
+              <div className="grid grid-cols-2 items-center gap-2">
+                <Label className="font-medium">Name:</Label>
+                <span>{`${selectedOperatorForDetails.firstname} ${selectedOperatorForDetails.lastname}`}</span>
+              </div>
+              <div className="grid grid-cols-2 items-center gap-2">
+                <Label className="font-medium">Email:</Label>
+                <span>{selectedOperatorForDetails.email || "N/A"}</span>
+              </div>
+              <div className="grid grid-cols-2 items-center gap-2">
+                <Label className="font-medium">Contact:</Label>
+                <span>{selectedOperatorForDetails.contact || "N/A"}</span>
+              </div>
+              <div className="grid grid-cols-2 items-center gap-2">
+                <Label className="font-medium">Position:</Label>
+                <span>{selectedOperatorForDetails.position || "N/A"}</span>
+              </div>
+              <div className="grid grid-cols-2 items-center gap-2">
+                <Label className="font-medium">Role:</Label>
+                <span>{selectedOperatorForDetails.role || "N/A"}</span>
+              </div>
+              <div className="grid grid-cols-2 items-center gap-2">
+                <Label className="font-medium">Status:</Label>
+                <Badge
+                  className={
+                    selectedOperatorForDetails.status === "ACTIVE"
+                      ? "bg-green-500 text-white w-fit"
+                      : "bg-red-500 text-white w-fit"
+                  }
+                >
+                  {selectedOperatorForDetails.status}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-2 items-center gap-2">
+                <Label className="font-medium">Location:</Label>
+                <span>{selectedOperatorForDetails.location ?? "N/A"}</span>
+              </div>
+              <div className="grid grid-cols-2 items-center gap-2">
+                <Label className="font-medium">Assigned Breakers:</Label>
+                <span className="max-h-[100px] overflow-y-auto">
+                  {Array.isArray(selectedOperatorForDetails.breakers) && selectedOperatorForDetails.breakers.length > 0
+                    ? selectedOperatorForDetails.breakers.map(breaker => breaker.sbcId).join(", ")
+                    : "None"}
+                </span>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
 
       {editOperator && formData && (

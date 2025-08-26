@@ -127,12 +127,28 @@ export function AddOperatorForm({ onSuccess }: AddOperatorFormProps) {
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="location">Location (optional)</Label>
-        <Input
-          id="location"
+        <Label htmlFor="location">Location (State)</Label>
+        <Select
           value={formData.location}
-          onChange={(e) => setFormData((prev) => ({ ...prev, location: e.target.value }))}
-        />
+          onValueChange={(value) => setFormData((prev) => ({ ...prev, location: value }))}
+        >
+          <SelectTrigger>
+        <SelectValue placeholder="Select state" />
+          </SelectTrigger>
+          <SelectContent>
+        {[
+          "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno",
+          "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu", "FCT", "Gombe", "Imo",
+          "Jigawa", "Kaduna", "Kano", "Katsina", "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa",
+          "Niger", "Ogun", "Ondo", "Osun", "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba",
+          "Yobe", "Zamfara"
+        ].map((state) => (
+          <SelectItem key={state} value={state}>
+            {state}
+          </SelectItem>
+        ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-2">
         <Label htmlFor="role">Role</Label>
