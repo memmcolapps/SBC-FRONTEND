@@ -66,6 +66,7 @@ export interface Breaker {
   updatedAt: string;
   // This property was missing in the provided interface, but used in the component
   status: "ACTIVE" | "INACTIVE";
+  assignedBreakers?: Breaker[];
 }
 
 export interface BreakersResponseData {

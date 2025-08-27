@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import axios, { AxiosError } from "axios";
 import { env } from "@/env";
+import { type Breaker } from "@/types";
 
 const api = axios.create({
   baseURL: `${env.NEXT_PUBLIC_BASE_URL}/v1`,
@@ -62,6 +63,7 @@ export interface OperatorForUI {
   password?: string;
   location?: string;
   hierarchy?: number;
+  breakers?: Breaker[];
 }
 
 export interface PaginatedOperators {

@@ -11,6 +11,7 @@ export interface User {
 
 export interface Breaker {
   id: string;
+  sbcId: string;
   breakerId: string;
   name: string;
   location: string;
