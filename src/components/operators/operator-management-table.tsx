@@ -304,9 +304,8 @@ export function OperatorManagementTable() {
               operatorsData.content.map((operator: OperatorForUI) => (
                 <TableRow
                   key={operator.id || "N/A"}
-                  className={`cursor-pointer ${
-                    operator.status === "BLOCKED" ? "bg-gray-100 opacity-50" : ""
-                  }`}
+                  className={`cursor-pointer ${operator.status === "BLOCKED" ? "bg-gray-100 opacity-50" : ""
+                    }`}
                   onClick={() => handleViewDetails(operator)}
                 >
                   <TableCell>{`${operator.firstname} ${operator.lastname}`}</TableCell>
@@ -328,18 +327,17 @@ export function OperatorManagementTable() {
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" 
+                        className="p-0 cursor-pointer border border-gray-300 focus:ring-gray-300">
                           <MoreVertical className="h-4 w-4" size={16} />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleViewDetails(operator)}>
-                          View
-                        </DropdownMenuItem>
                         {operator.status === "BLOCKED" ? (
                           <DropdownMenuItem
                             onClick={() => handleBlockOperator(operator)}
                             disabled={isUpdating}
+                            className="cursor-pointer"
                           >
                             Unblock
                           </DropdownMenuItem>
@@ -348,16 +346,19 @@ export function OperatorManagementTable() {
                             <DropdownMenuItem
                               onClick={() => handleBlockOperator(operator)}
                               disabled={isUpdating}
+                              className="cursor-pointer"
                             >
                               Block
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleEdit(operator)}
+                              className="cursor-pointer"
                             >
                               Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleAssignBreaker(operator)}
+                              className="cursor-pointer"
                             >
                               Assign Breaker
                             </DropdownMenuItem>
