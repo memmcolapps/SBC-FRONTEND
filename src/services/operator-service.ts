@@ -7,6 +7,11 @@ const api = axios.create({
   baseURL: `${env.NEXT_PUBLIC_BASE_URL}/v1`,
 });
 
+// A temporary interface to handle the case where the API sends access as an object
+interface OperatorAccessItem {
+  sbcId: string;
+}
+
 interface OperatorsApiResponse {
   responsecode: string;
   responsedesc: string;
@@ -22,7 +27,7 @@ export interface OperatorApiResponse {
   responsedata: OperatorFromApi | {
     totalData: number;
     data: OperatorFromApi[];
-  } | string; // Allow string for empty responsedata
+  } | string;
 }
 
 export interface OperatorFromApi {
@@ -37,7 +42,9 @@ export interface OperatorFromApi {
   status: boolean;
   permission: boolean;
   active: boolean;
-  access: string | null;
+  // CORRECTED: The `access` property should be an array of objects,
+  // as this is what your UI component expects.
+  access: OperatorAccessItem[] | null;
   roles?: Array<{
     id: string;
     orgId: string;
@@ -64,6 +71,7 @@ export interface OperatorForUI {
   location?: string;
   hierarchy?: number;
   breakers?: Breaker[];
+  sbcId?: string;
 }
 
 export interface PaginatedOperators {
@@ -83,39 +91,40 @@ export interface FetchOperatorsParams {
 }
 
 export const fetchOperators = async (params: FetchOperatorsParams): Promise<PaginatedOperators> => {
-  try {
-    const { token, ...queryParams } = params;
-    const response = await api.get<OperatorsApiResponse>("/api/operator/service/all", {
-      params: queryParams,
-      headers: { Authorization: `Bearer ${token}` },
-    });
+  try {
+    const { token, ...queryParams } = params;
+    const response = await api.get<OperatorsApiResponse>("/api/operator/service/all", {
+      params: queryParams,
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-    const apiData = response.data.responsedata;
+    const apiData = response.data.responsedata;
 
-    const content: OperatorForUI[] = apiData.data.map((op: OperatorFromApi) => ({
-      id: op.id,
-      firstname: op.firstname,
-      lastname: op.lastname,
-      email: op.email,
-      contact: op.phoneNumber,
-      position: op.position,
-      status: op.status ? "ACTIVE" : "BLOCKED",
-      permission: op.permission,
-      role: op.roles?.[0]?.userRole.replace("ROLE_", "") ?? "READ",
-      password: op.password,
-      location: op.location,
-      hierarchy: op.hierarchy,
-    }));
+    const content: OperatorForUI[] = apiData.data.map((op: OperatorFromApi) => ({
+      id: op.id,
+      firstname: op.firstname,
+      lastname: op.lastname,
+      email: op.email,
+      contact: op.phoneNumber,
+      position: op.position,
+      status: op.status ? "ACTIVE" : "BLOCKED",
+      permission: op.permission,
+      role: op.roles?.[0]?.userRole.replace("ROLE_", "") ?? "READ",
+      password: op.password,
+      location: op.location,
+      hierarchy: op.hierarchy,
+      sbcId: op.access?.[0]?.sbcId,
+    }));
 
-    return {
-      content,
-      totalElements: apiData.totalData,
-      totalPages: Math.ceil(apiData.totalData / (params.size ?? 10)),
-    };
-  } catch (error) {
-    console.error("Failed to fetch operators:", error);
-    throw error;
-  }
+    return {
+      content,
+      totalElements: apiData.totalData,
+      totalPages: Math.ceil(apiData.totalData / (params.size ?? 10)),
+    };
+  } catch (error) {
+    console.error("Failed to fetch operators:", error);
+    throw error;
+  }
 };
 
 export const getOperator = async (id: string, token: string): Promise<OperatorForUI> => {
@@ -130,9 +139,9 @@ export const getOperator = async (id: string, token: string): Promise<OperatorFo
     );
 
     const apiData = response.data.responsedata;
-    const op = Array.isArray(apiData) ? apiData[0] : (apiData as any).data?.[0] || apiData as OperatorFromApi;
+    const op = Array.isArray((apiData as any).data) ? (apiData as any).data[0] : (typeof apiData === "string" ? null : apiData as OperatorFromApi);
 
-    if (!op || typeof op === "string") {
+    if (!op) {
       throw new Error("Invalid response from server: Empty or invalid operator data.");
     }
 
@@ -149,6 +158,7 @@ export const getOperator = async (id: string, token: string): Promise<OperatorFo
       permission: op.permission ?? false,
       password: op.password ?? "",
       role: op.roles?.[0]?.userRole.replace("ROLE_", "") ?? "READ",
+      sbcId: op.access && op.access.length > 0 ? op.access[0].sbcId : undefined,
     };
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
@@ -224,7 +234,6 @@ export const createOperator = async (
         position: payload.position,
         status: "ACTIVE",
         permission: payload.permission,
-        password: payload.password,
         role: payload.role,
       };
     }
@@ -279,13 +288,13 @@ export const updateOperatorStatus = async (
   token: string,
 ): Promise<OperatorForUI> => {
   try {
-    console.log("Update Operator Status Request:", { 
+    console.log("Update Operator Status Request:", {
       url: `${env.NEXT_PUBLIC_BASE_URL}/v1/api/operator/service/block`,
-      payload 
+      payload
     });
     const response = await axios.patch<OperatorApiResponse>(
       `${env.NEXT_PUBLIC_BASE_URL}/v1/api/operator/service/block`,
-      { userId: payload.userId, state: payload.state }, // Send in body
+      { userId: payload.userId, state: payload.state },
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -385,7 +394,6 @@ export const editOperator = async (
         position: payload.position,
         status: "ACTIVE",
         permission: payload.permission,
-        password: payload.password,
         role: payload.role,
       };
     }

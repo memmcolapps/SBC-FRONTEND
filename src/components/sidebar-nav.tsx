@@ -78,7 +78,7 @@ export function SidebarNav() {
               width={200}
               height={43}
               alt="MOMAS/EPAIL Logo"
-              src="/logo.png"
+              src="/sea-logo.png"
               className="mx-auto"
               priority
               quality={90}
