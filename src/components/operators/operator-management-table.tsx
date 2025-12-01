@@ -244,8 +244,8 @@ export function OperatorManagementTable() {
     );
   };
 
-  // NEW HANDLER FOR VIEWING DETAILS
   const handleViewDetails = (operator: OperatorForUI) => {
+    console.log("Operator data:", operator);
     setSelectedOperatorForDetails(operator);
     setIsDetailsDialogOpen(true);
   };
@@ -327,8 +327,8 @@ export function OperatorManagementTable() {
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" 
-                        className="p-0 cursor-pointer border border-gray-300 focus:ring-gray-300">
+                        <Button variant="ghost" size="sm"
+                          className="p-0 cursor-pointer border border-gray-300 focus:ring-gray-300">
                           <MoreVertical className="h-4 w-4" size={16} />
                         </Button>
                       </DropdownMenuTrigger>
@@ -456,9 +456,7 @@ export function OperatorManagementTable() {
               <div className="grid grid-cols-2 items-center gap-2">
                 <Label className="font-medium">Assigned Breakers:</Label>
                 <span className="max-h-[100px] overflow-y-auto">
-                  {Array.isArray(selectedOperatorForDetails.breakers) && selectedOperatorForDetails.breakers.length > 0
-                    ? selectedOperatorForDetails.breakers.map(breaker => breaker.sbcId).join(", ")
-                    : "None"}
+                  {selectedOperatorForDetails.sbcId ?? "None"}
                 </span>
               </div>
             </div>
