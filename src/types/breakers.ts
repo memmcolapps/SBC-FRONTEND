@@ -64,8 +64,7 @@ export interface Breaker {
   operatorId: string | null;
   createdAt: string;
   updatedAt: string;
-  // This property was missing in the provided interface, but used in the component
-  status: "ACTIVE" | "INACTIVE";
+  status: boolean;
   assignedBreakers?: Breaker[];
 }
 

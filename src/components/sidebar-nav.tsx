@@ -74,15 +74,18 @@ export function SidebarNav() {
       <div className="flex h-full flex-col bg-[#ffffff]">
         <SidebarHeader className="flex items-center justify-center pt-14">
           <Link href="/" className="transition-opacity hover:opacity-80">
-            <Image
-              width={200}
-              height={43}
-              alt="MOMAS/EPAIL Logo"
-              src="/sea-logo.png"
-              className="mx-auto"
-              priority
-              quality={90}
-            />
+            <div className="relative">
+              <Image
+                width={200}
+                height={43}
+                alt="MOMAS/EPAIL Logo"
+                src="/sea-logo.png"
+                className="mx-auto drop-shadow-lg"
+                priority
+                quality={90}
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent rounded-lg"></div>
+            </div>
           </Link>
         </SidebarHeader>
         <SidebarContent className="flex-1 px-4 pt-8">
@@ -94,8 +97,8 @@ export function SidebarNav() {
                   <SidebarMenuButton
                     asChild
                     className={cn(
-                      "group w-full rounded-lg transition-all duration-200 hover:bg-[#16085F] hover:text-[#ffffff]",
-                      isActive ? "bg-[#16085F] text-[#ffffff]" : "",
+                      "group w-full rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-[#16085F] hover:to-[#2a1b8f] hover:text-[#ffffff] hover:shadow-lg hover:scale-105",
+                      isActive ? "bg-gradient-to-r from-[#16085F] to-[#2a1b8f] text-[#ffffff] shadow-lg" : "",
                     )}
                   >
                     <Link
@@ -118,11 +121,11 @@ export function SidebarNav() {
           <SidebarMenu>
             <SidebarMenuItem className="my-6">
               <SidebarMenuButton
-                className="text-red-600 hover:bg-red-100 hover:text-red-700"
+                className="text-red-600 hover:bg-gradient-to-r hover:from-red-100 hover:to-red-200 hover:text-red-700 transition-all duration-300 hover:shadow-md"
                 onClick={logout}
               >
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
+                <LogOut className="mr-2 h-4 w-4 transition-transform hover:scale-110" />
+                <span className="font-medium">Logout</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
