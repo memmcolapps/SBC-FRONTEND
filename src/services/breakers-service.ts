@@ -51,10 +51,11 @@ export const changeBreakerState = async (
   },
   token: string
 ) => {
-  const response = await axios.patch(`${API_BASE_URL}/v1/api/breaker/service/change-state`, data, {
+  const response = await axios.patch(`${API_BASE_URL}/v1/api/breaker/service/change-state`, {}, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
+    params: data,
   });
   return response.data;
 };
