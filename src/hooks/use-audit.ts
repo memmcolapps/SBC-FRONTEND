@@ -1,5 +1,5 @@
 import { fetchAuditLogs } from "@/services/audit-logs-service";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/auth-context";
 
 export function useAuditLogs(

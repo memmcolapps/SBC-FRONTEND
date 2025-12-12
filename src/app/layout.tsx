@@ -1,7 +1,6 @@
 import "../styles/globals.css";
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
-import { Toaster } from "sonner";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {

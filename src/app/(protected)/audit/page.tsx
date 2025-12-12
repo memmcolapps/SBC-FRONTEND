@@ -4,7 +4,6 @@ import { AuditLogFilters } from "@/components/audit/audit-log-filters";
 import { AuditLogTable } from "@/components/audit/audit-log-table";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useAuth } from "@/context/auth-context";
 import { useAuditLogs } from "@/hooks/use-audit";
 import { Button } from "@/components/ui/button";
 import {

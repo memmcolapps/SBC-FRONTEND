@@ -129,22 +129,6 @@ export const OrgTree: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Helper functions for tree manipulation
-  const addChildToTree = (
-    node: TreeNode,
-    parentId: number,
-    newNode: TreeNode,
-  ): TreeNode => {
-    if (node.id === parentId) {
-      return { ...node, children: [...node.children, newNode] };
-    }
-    return {
-      ...node,
-      children: node.children.map((child) =>
-        addChildToTree(child, parentId, newNode),
-      ),
-    };
-  };
 
   const deleteFromTree = (node: TreeNode, id: number): TreeNode | null => {
     if (node.id === id) {
@@ -172,21 +156,6 @@ export const OrgTree: React.FC = () => {
     };
   };
 
-  const updateNodeIdInTree = (
-    node: TreeNode,
-    oldId: number,
-    newId: number,
-  ): TreeNode => {
-    if (node.id === oldId) {
-      return { ...node, id: newId };
-    }
-    return {
-      ...node,
-      children: node.children.map((child) =>
-        updateNodeIdInTree(child, oldId, newId),
-      ),
-    };
-  };
 
   const convertApiTreeToComponentTree = (
     apiNodes: OrganizationNode[],
@@ -211,21 +180,6 @@ export const OrgTree: React.FC = () => {
     };
   };
 
-  const saveTree = async (updatedTree: TreeNode) => {
-    const token = getAccessToken();
-    if (!token) {
-      window.location.href = "/login";
-      return;
-    }
-
-    try {
-      const apiTree = convertComponentTreeToApiTree(updatedTree);
-      await saveOrganizationTree(apiTree, token);
-    } catch (error) {
-      console.error("Failed to save organization tree:", error);
-      throw error;
-    }
-  };
 
   const addChild = async (parentId: number) => {
     const token = getAccessToken();
@@ -387,7 +341,7 @@ export const OrgTree: React.FC = () => {
     };
 
     void fetchTree();
-  }, [getAccessToken]);
+  }, [getAccessToken, convertApiTreeToComponentTree]);
 
   if (isLoading) {
     return (

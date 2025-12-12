@@ -130,7 +130,7 @@ export async function createSingleNode(
 
 export async function deleteOrganizationNode(
   nodeId: number | string,
-  token: string,
+  _token: string,
 ): Promise<void> {
   try {
     console.log("Deleting node with id:", nodeId);

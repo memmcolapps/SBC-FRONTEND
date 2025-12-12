@@ -1,8 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, AlertTriangle } from "lucide-react";
 import type { Notification } from "@/types";
 
 const notifications: Notification[] = [
