@@ -146,7 +146,7 @@ export function BreakerManagementTable() {
     }
 
     changeStateMutation.mutate(
-      { id: breaker.id, state: newState },
+      { id: breaker.id, status: newState },
       {
         onSuccess: () => {
           setLocalModifications((prev) => {
@@ -175,6 +175,9 @@ export function BreakerManagementTable() {
               },
             };
           });
+          setDialogState({ isOpen: false, breakerId: null, action: null });
+        },
+        onError: () => {
           setDialogState({ isOpen: false, breakerId: null, action: null });
         },
       }
@@ -344,8 +347,9 @@ export function BreakerManagementTable() {
             <Button
               onClick={confirmAction}
               variant={dialogState.action === "deactivate" ? "destructive" : "default"}
+              disabled={changeStateMutation.isPending}
             >
-              Confirm
+              {changeStateMutation.isPending ? "Processing..." : "Confirm"}
             </Button>
           </DialogFooter>
         </DialogContent>

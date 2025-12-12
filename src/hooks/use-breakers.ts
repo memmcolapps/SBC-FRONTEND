@@ -93,7 +93,7 @@ export const useChangeBreakerState = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (payload: { id: string; state: boolean }) => {
+    mutationFn: async (payload: { id: string; status: boolean }) => {
       if (!token) {
         throw new Error("No token found in local storage");
       }

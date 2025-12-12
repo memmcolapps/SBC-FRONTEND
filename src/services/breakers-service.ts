@@ -47,7 +47,7 @@ export type AssignBreakersPayload = {
 export const changeBreakerState = async (
   data: {
     id: string;
-    state: boolean;
+    status: boolean;
   },
   token: string
 ) => {
