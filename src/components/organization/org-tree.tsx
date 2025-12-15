@@ -1,14 +1,13 @@
 // src/components/organization/org-tree.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ChevronRight, ChevronDown, Plus, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/auth-context";
 import {
   fetchOrganizationTree,
-  saveOrganizationTree,
   deleteOrganizationNode,
   createSingleNode,
   updateSingleNode,
@@ -157,28 +156,18 @@ export const OrgTree: React.FC = () => {
   };
 
 
-  const convertApiTreeToComponentTree = (
-    apiNodes: OrganizationNode[],
-  ): TreeNode[] => {
-    return apiNodes.map((node) => ({
-      id: node.id,
-      name: node.name,
-      parent_id: node.parent_id,
-      children: node.nodes ? convertApiTreeToComponentTree(node.nodes) : [],
-    }));
-  };
+  const convertApiTreeToComponentTree = useCallback(
+    (apiNodes: OrganizationNode[]): TreeNode[] => {
+      return apiNodes.map((node) => ({
+        id: node.id,
+        name: node.name,
+        parent_id: node.parent_id,
+        children: node.nodes ? convertApiTreeToComponentTree(node.nodes) : [],
+      }));
+    },
+    [],
+  );
 
-  const convertComponentTreeToApiTree = (node: TreeNode): OrganizationNode => {
-    return {
-      id: node.id,
-      name: node.name,
-      parent_id: node.parent_id,
-      nodes:
-        node.children.length > 0
-          ? node.children.map(convertComponentTreeToApiTree)
-          : [],
-    };
-  };
 
 
   const addChild = async (parentId: number) => {
