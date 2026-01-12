@@ -1,5 +1,5 @@
 // auditLogsService.ts
-import axios, { type AxiosError } from "axios";
+import axios from "axios";
 import { env } from "@/env";
 import { handleApiError } from "error";
 

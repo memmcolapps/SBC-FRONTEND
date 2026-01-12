@@ -638,8 +638,8 @@ export function OperatorManagementTable() {
                             {breaker.city}, {breaker.state}, {breaker.streetName}
                           </TableCell>
                           <TableCell>
-                            <Badge variant={breaker.status === "ACTIVE" ? "default" : "secondary"}>
-                              {breaker.status}
+                            <Badge variant={breaker.status ? "default" : "secondary"}>
+                              {breaker.status ? "ACTIVE" : "INACTIVE"}
                             </Badge>
                           </TableCell>
                         </TableRow>

@@ -44,6 +44,22 @@ export type AssignBreakersPayload = {
   sbcIds: string[];
 };
 
+export const changeBreakerState = async (
+  data: {
+    id: string;
+    status: boolean;
+  },
+  token: string
+) => {
+  const response = await axios.patch(`${API_BASE_URL}/v1/api/breaker/service/change-state`, {}, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    params: data,
+  });
+  return response.data;
+};
+
 export const fetchBreakers = async (
   filters: BreakerFilters,
   token: string,

@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useBreakers } from "@/hooks/use-breakers";
+import { useBreakers, useChangeBreakerState } from "@/hooks/use-breakers";
 import { Skeleton } from "@/components/ui/skeleton";
 import { type Breaker } from "@/types/breakers";
 import React from "react";
@@ -38,7 +38,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-interface ExpandedBreaker extends Breaker {
+interface ExpandedBreaker extends Omit<Breaker, 'status'> {
   isExpanded: boolean;
   buttons: Record<string, boolean>;
   lastAction?: string;
@@ -53,6 +53,7 @@ export function BreakerManagementTable() {
     page: 0,
     size: 10,
   });
+  const changeStateMutation = useChangeBreakerState();
 
   const [dialogState, setDialogState] = useState<{
     isOpen: boolean;
@@ -82,16 +83,18 @@ export function BreakerManagementTable() {
 
     return Array.from(uniqueBreakers.values()).map((breaker) => {
       const localData = localModifications[breaker.sbcId] ?? {};
+      const apiStatus = breaker.status ? "ACTIVE" : "INACTIVE";
+      const currentStatus = localData.status ?? apiStatus;
       return {
         ...breaker,
         isExpanded: localData.isExpanded ?? false,
-        status: localData.status ?? "INACTIVE",
+        status: currentStatus,
         lastAction: localData.lastAction ?? "No recent actions",
         buttons: localData.buttons ?? {
-          B1: localData.status === "ACTIVE",
-          B2: localData.status === "ACTIVE",
-          B3: localData.status === "ACTIVE",
-          B4: localData.status === "ACTIVE",
+          B1: currentStatus === "ACTIVE",
+          B2: currentStatus === "ACTIVE",
+          B3: currentStatus === "ACTIVE",
+          B4: currentStatus === "ACTIVE",
           B5: breaker.breakerCount > 4,
           B6: breaker.breakerCount > 5,
         },
@@ -127,7 +130,7 @@ export function BreakerManagementTable() {
   };
 
   const handleActionClick = (breakerId: string, action: "activate" | "deactivate") => {
-    setDialogState({ isOpen: true, breakerId, action });
+    setDialogState({ isOpen: true, breakerId: breakerId, action });
   };
 
   const confirmAction = () => {
@@ -135,35 +138,50 @@ export function BreakerManagementTable() {
       return;
     }
     const { breakerId, action } = dialogState;
+    const newState = action === "activate";
+    const breaker = breakers.find(b => b.sbcId === breakerId);
 
-    setLocalModifications((prev) => {
-      const isDeactivating = action === "deactivate";
-      const breakerData = breakers.find((b) => b.sbcId === breakerId);
-      return {
-        ...prev,
-        [breakerId]: {
-          ...prev[breakerId],
-          status: isDeactivating ? "INACTIVE" : "ACTIVE",
-          lastAction: isDeactivating ? "Deactivated" : "Activated",
-          buttons: isDeactivating
-            ? {
-                ...(breakerData?.buttons ?? {}),
-                B1: false,
-                B2: false,
-                B3: false,
-                B4: false,
-              }
-            : {
-                ...(breakerData?.buttons ?? {}),
-                B1: true,
-                B2: true,
-                B3: true,
-                B4: true,
+    if (!breaker) {
+      return;
+    }
+
+    changeStateMutation.mutate(
+      { id: breaker.id, status: newState },
+      {
+        onSuccess: () => {
+          setLocalModifications((prev) => {
+            const breakerData = breakers.find((b) => b.sbcId === breakerId);
+            return {
+              ...prev,
+              [breakerId]: {
+                ...prev[breakerId],
+                status: newState ? "ACTIVE" : "INACTIVE",
+                lastAction: newState ? "Activated" : "Deactivated",
+                buttons: newState
+                  ? {
+                      ...(breakerData?.buttons ?? {}),
+                      B1: true,
+                      B2: true,
+                      B3: true,
+                      B4: true,
+                    }
+                  : {
+                      ...(breakerData?.buttons ?? {}),
+                      B1: false,
+                      B2: false,
+                      B3: false,
+                      B4: false,
+                    },
               },
+            };
+          });
+          setDialogState({ isOpen: false, breakerId: null, action: null });
         },
-      };
-    });
-    setDialogState({ isOpen: false, breakerId: null, action: null });
+        onError: () => {
+          setDialogState({ isOpen: false, breakerId: null, action: null });
+        },
+      }
+    );
   };
   
   if (isLoading) {
@@ -254,20 +272,20 @@ export function BreakerManagementTable() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         {breaker.status === "ACTIVE" ? (
-                          <DropdownMenuItem
-                            onClick={() => handleActionClick(breaker.sbcId, "deactivate")}
-                          >
-                            Deactivate
-                          </DropdownMenuItem>
-                        ) : (
                           <>
                             <DropdownMenuItem
-                              onClick={() => handleActionClick(breaker.sbcId, "activate")}
+                              onClick={() => handleActionClick(breaker.sbcId, "deactivate")}
                             >
-                              Activate
+                              Deactivate
                             </DropdownMenuItem>
                             <DropdownMenuItem>Edit</DropdownMenuItem>
                           </>
+                        ) : (
+                          <DropdownMenuItem
+                            onClick={() => handleActionClick(breaker.sbcId, "activate")}
+                          >
+                            Activate
+                          </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -329,8 +347,9 @@ export function BreakerManagementTable() {
             <Button
               onClick={confirmAction}
               variant={dialogState.action === "deactivate" ? "destructive" : "default"}
+              disabled={changeStateMutation.isPending}
             >
-              Confirm
+              {changeStateMutation.isPending ? "Processing..." : "Confirm"}
             </Button>
           </DialogFooter>
         </DialogContent>

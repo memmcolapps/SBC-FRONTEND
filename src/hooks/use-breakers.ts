@@ -4,6 +4,7 @@ import {
   fetchBreakers,
   registerBreaker,
   assignBreakers,
+  changeBreakerState,
   type RegisterBreakerPayload,
   type RegisterBreakerResponse,
   type AssignBreakersPayload,
@@ -81,6 +82,30 @@ export const useAssignBreakers = () => {
     },
     onError: (error) => {
       toast.error("Failed to assign breakers: " + error.message);
+    },
+  });
+};
+
+// --- change breaker state ---
+export const useChangeBreakerState = () => {
+  const { getAccessToken } = useAuth();
+  const token = getAccessToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: { id: string; status: boolean }) => {
+      if (!token) {
+        throw new Error("No token found in local storage");
+      }
+      const response = await changeBreakerState(payload, token);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["breakers"] });
+      toast.success("Breaker state changed successfully!");
+    },
+    onError: (error) => {
+      toast.error("Failed to change breaker state: " + error.message);
     },
   });
 };
