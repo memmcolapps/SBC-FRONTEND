@@ -325,7 +325,7 @@ export function OperatorManagementTable() {
                     </Badge>
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu>
+                    <DropdownMenu modal={false}>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm"
                           className="p-0 cursor-pointer border border-gray-300 focus:ring-gray-300">
@@ -410,189 +410,184 @@ export function OperatorManagementTable() {
       )}
 
       {/* View Details Dialog */}
-      {selectedOperatorForDetails && (
-        <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
-          <DialogContent className="sm:max-w-[425px] h-fit bg-white">
-            <DialogHeader>
-              <DialogTitle>Operator Details</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4 text-sm">
-              <div className="grid grid-cols-2 items-center gap-2">
-                <Label className="font-medium">Name:</Label>
-                <span>{`${selectedOperatorForDetails.firstname} ${selectedOperatorForDetails.lastname}`}</span>
+      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] h-fit bg-white">
+          <DialogHeader>
+            <DialogTitle>Operator Details</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4 text-sm">
+            <div className="grid grid-cols-2 items-center gap-2">
+              <Label className="font-medium">Name:</Label>
+              <span>{`${selectedOperatorForDetails?.firstname ?? ""} ${selectedOperatorForDetails?.lastname ?? ""}`}</span>
+            </div>
+            <div className="grid grid-cols-2 items-center gap-2">
+              <Label className="font-medium">Email:</Label>
+              <span>{selectedOperatorForDetails?.email || "N/A"}</span>
+            </div>
+            <div className="grid grid-cols-2 items-center gap-2">
+              <Label className="font-medium">Contact:</Label>
+              <span>{selectedOperatorForDetails?.contact || "N/A"}</span>
+            </div>
+            <div className="grid grid-cols-2 items-center gap-2">
+              <Label className="font-medium">Position:</Label>
+              <span>{selectedOperatorForDetails?.position || "N/A"}</span>
+            </div>
+            <div className="grid grid-cols-2 items-center gap-2">
+              <Label className="font-medium">Role:</Label>
+              <span>{selectedOperatorForDetails?.role || "N/A"}</span>
+            </div>
+            <div className="grid grid-cols-2 items-center gap-2">
+              <Label className="font-medium">Status:</Label>
+              <Badge
+                className={
+                  selectedOperatorForDetails?.status === "ACTIVE"
+                    ? "bg-green-500 text-white w-fit"
+                    : "bg-red-500 text-white w-fit"
+                }
+              >
+                {selectedOperatorForDetails?.status}
+              </Badge>
+            </div>
+            <div className="grid grid-cols-2 items-center gap-2">
+              <Label className="font-medium">Location:</Label>
+              <span>{selectedOperatorForDetails?.location ?? "N/A"}</span>
+            </div>
+            <div className="grid grid-cols-2 items-center gap-2">
+              <Label className="font-medium">Assigned Breakers:</Label>
+              <span className="max-h-[100px] overflow-y-auto">
+                {selectedOperatorForDetails?.sbcId ?? "None"}
+              </span>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={() => {
+        setEditOperator(null);
+        setFormData(null);
+        setIsEditDialogOpen(false);
+      }}>
+        <DialogContent className="sm:max-w-[425px] h-fit bg-white">
+          <DialogHeader>
+            <DialogTitle>Edit Operator</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  value={formData?.firstname ?? ""}
+                  onChange={(e) => setFormData((prev) => prev ? { ...prev, firstname: e.target.value } : prev)}
+                  required
+                />
               </div>
-              <div className="grid grid-cols-2 items-center gap-2">
-                <Label className="font-medium">Email:</Label>
-                <span>{selectedOperatorForDetails.email || "N/A"}</span>
-              </div>
-              <div className="grid grid-cols-2 items-center gap-2">
-                <Label className="font-medium">Contact:</Label>
-                <span>{selectedOperatorForDetails.contact || "N/A"}</span>
-              </div>
-              <div className="grid grid-cols-2 items-center gap-2">
-                <Label className="font-medium">Position:</Label>
-                <span>{selectedOperatorForDetails.position || "N/A"}</span>
-              </div>
-              <div className="grid grid-cols-2 items-center gap-2">
-                <Label className="font-medium">Role:</Label>
-                <span>{selectedOperatorForDetails.role || "N/A"}</span>
-              </div>
-              <div className="grid grid-cols-2 items-center gap-2">
-                <Label className="font-medium">Status:</Label>
-                <Badge
-                  className={
-                    selectedOperatorForDetails.status === "ACTIVE"
-                      ? "bg-green-500 text-white w-fit"
-                      : "bg-red-500 text-white w-fit"
-                  }
-                >
-                  {selectedOperatorForDetails.status}
-                </Badge>
-              </div>
-              <div className="grid grid-cols-2 items-center gap-2">
-                <Label className="font-medium">Location:</Label>
-                <span>{selectedOperatorForDetails.location ?? "N/A"}</span>
-              </div>
-              <div className="grid grid-cols-2 items-center gap-2">
-                <Label className="font-medium">Assigned Breakers:</Label>
-                <span className="max-h-[100px] overflow-y-auto">
-                  {selectedOperatorForDetails.sbcId ?? "None"}
-                </span>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  value={formData?.lastname ?? ""}
+                  onChange={(e) => setFormData((prev) => prev ? { ...prev, lastname: e.target.value } : prev)}
+                  required
+                />
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
-      )}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData?.email ?? ""}
+                disabled={true}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="contact">Contact</Label>
+              <Input
+                id="contact"
+                value={formData?.phoneNumber ?? ""}
+                disabled={true}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="position">Position</Label>
+              <Input
+                id="position"
+                value={formData?.position ?? ""}
+                onChange={(e) => setFormData((prev) => prev ? { ...prev, position: e.target.value.toUpperCase() } : prev)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="location">Location (optional)</Label>
+              <Input
+                id="location"
+                value={formData?.location ?? ""}
+                onChange={(e) => setFormData((prev) => prev ? { ...prev, location: e.target.value } : prev)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select
+                value={formData?.role ?? ""}
+                onValueChange={(value) => setFormData((prev) => prev ? { ...prev, role: value } : prev)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles.map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {role}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="permission">Permission</Label>
+              <Select
+                value={formData?.permission ? "true" : "false"}
+                onValueChange={(value) => setFormData((prev) => prev ? { ...prev, permission: value === "true" } : prev)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select permission" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Enabled</SelectItem>
+                  <SelectItem value="false">Disabled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => {
+                setEditOperator(null);
+                setFormData(null);
+                setIsEditDialogOpen(false);
+              }}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isEditing}>
+                {isEditing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {isEditing ? "Updating..." : "Update Operator"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-      {editOperator && formData && (
-        <Dialog open={isEditDialogOpen} onOpenChange={() => {
-          setEditOperator(null);
-          setFormData(null);
-          setIsEditDialogOpen(false);
-        }}>
-          <DialogContent className="sm:max-w-[425px] h-fit bg-white">
-            <DialogHeader>
-              <DialogTitle>Edit Operator</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleEditSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input
-                    id="firstName"
-                    value={formData.firstname}
-                    onChange={(e) => setFormData((prev) => prev ? { ...prev, firstname: e.target.value } : prev)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input
-                    id="lastName"
-                    value={formData.lastname}
-                    onChange={(e) => setFormData((prev) => prev ? { ...prev, lastname: e.target.value } : prev)}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  disabled={true}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="contact">Contact</Label>
-                <Input
-                  id="contact"
-                  value={formData.phoneNumber}
-                  disabled={true}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="position">Position</Label>
-                <Input
-                  id="position"
-                  value={formData.position}
-                  onChange={(e) => setFormData((prev) => prev ? { ...prev, position: e.target.value.toUpperCase() } : prev)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="location">Location (optional)</Label>
-                <Input
-                  id="location"
-                  value={formData.location}
-                  onChange={(e) => setFormData((prev) => prev ? { ...prev, location: e.target.value } : prev)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <Select
-                  value={formData.role}
-                  onValueChange={(value) => setFormData((prev) => prev ? { ...prev, role: value } : prev)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roles.map((role) => (
-                      <SelectItem key={role} value={role}>
-                        {role}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="permission">Permission</Label>
-                <Select
-                  value={formData.permission ? "true" : "false"}
-                  onValueChange={(value) => setFormData((prev) => prev ? { ...prev, permission: value === "true" } : prev)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select permission" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true">Enabled</SelectItem>
-                    <SelectItem value="false">Disabled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => {
-                  setEditOperator(null);
-                  setFormData(null);
-                  setIsEditDialogOpen(false);
-                }}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isEditing}>
-                  {isEditing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  {isEditing ? "Updating..." : "Update Operator"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {operatorToAssign && (
-        <Dialog open={isAssignBreakerDialogOpen} onOpenChange={() => {
-          setIsAssignBreakerDialogOpen(false);
-          setOperatorToAssign(null);
-          setSelectedBreakerSbcIds([]);
-          setIsAllSelected(false);
-        }}>
-          <DialogContent className="sm:max-w-[600px] h-fit bg-white">
-            <DialogHeader>
-              <DialogTitle>Assign Breaker to {operatorToAssign.firstname} {operatorToAssign.lastname}</DialogTitle>
-            </DialogHeader>
+      <Dialog open={isAssignBreakerDialogOpen} onOpenChange={() => {
+        setIsAssignBreakerDialogOpen(false);
+        setOperatorToAssign(null);
+        setSelectedBreakerSbcIds([]);
+        setIsAllSelected(false);
+      }}>
+        <DialogContent className="sm:max-w-[600px] h-fit bg-white">
+          <DialogHeader>
+            <DialogTitle>Assign Breaker to {operatorToAssign?.firstname} {operatorToAssign?.lastname}</DialogTitle>
+          </DialogHeader>
             <form onSubmit={handleAssignSubmit} className="space-y-4">
               <div className="rounded-md border">
                 <Table>
@@ -654,64 +649,61 @@ export function OperatorManagementTable() {
                   </TableBody>
                 </Table>
               </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => {
-                  setIsAssignBreakerDialogOpen(false);
-                  setOperatorToAssign(null);
-                  setSelectedBreakerSbcIds([]);
-                  setIsAllSelected(false);
-                }}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isAssigning || selectedBreakerSbcIds.length === 0}>
-                  {isAssigning ? <Loader2 size={14} className="h-4 w-4 animate-spin" /> : null}
-                  {isAssigning ? "Assigning..." : `Assign (${selectedBreakerSbcIds.length})`}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {operatorToBlock && (
-        <Dialog open={isBlockDialogOpen} onOpenChange={() => {
-          setIsBlockDialogOpen(false);
-          setOperatorToBlock(null);
-        }}>
-          <DialogContent className="sm:max-w-[425px] h-fit bg-white">
-            <DialogHeader>
-              <DialogTitle>
-                {operatorToBlock.status === "ACTIVE" ? "Block Operator" : "Unblock Operator"}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="py-4">
-              <p>
-                Are you sure you want to {operatorToBlock.status === "ACTIVE" ? "block" : "unblock"} {operatorToBlock.firstname} {operatorToBlock.lastname}?
-              </p>
-            </div>
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setIsBlockDialogOpen(false);
-                  setOperatorToBlock(null);
-                }}
-              >
+              <Button type="button" variant="outline" onClick={() => {
+                setIsAssignBreakerDialogOpen(false);
+                setOperatorToAssign(null);
+                setSelectedBreakerSbcIds([]);
+                setIsAllSelected(false);
+              }}>
                 Cancel
               </Button>
-              <Button
-                type="button"
-                onClick={handleConfirmBlock}
-                disabled={isUpdating}
-              >
-                {isUpdating ? <Loader2 size={14} className="h-4 w-4 animate-spin" /> : null}
-                {operatorToBlock.status === "ACTIVE" ? "Block" : "Unblock"}
+              <Button type="submit" disabled={isAssigning || selectedBreakerSbcIds.length === 0}>
+                {isAssigning ? <Loader2 size={14} className="h-4 w-4 animate-spin" /> : null}
+                {isAssigning ? "Assigning..." : `Assign (${selectedBreakerSbcIds.length})`}
               </Button>
             </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isBlockDialogOpen} onOpenChange={() => {
+        setIsBlockDialogOpen(false);
+        setOperatorToBlock(null);
+      }}>
+        <DialogContent className="sm:max-w-[425px] h-fit bg-white">
+          <DialogHeader>
+            <DialogTitle>
+              {operatorToBlock?.status === "ACTIVE" ? "Block Operator" : "Unblock Operator"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>
+              Are you sure you want to {operatorToBlock?.status === "ACTIVE" ? "block" : "unblock"} {operatorToBlock?.firstname} {operatorToBlock?.lastname}?
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsBlockDialogOpen(false);
+                setOperatorToBlock(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmBlock}
+              disabled={isUpdating}
+            >
+              {isUpdating ? <Loader2 size={14} className="h-4 w-4 animate-spin" /> : null}
+              {operatorToBlock?.status === "ACTIVE" ? "Block" : "Unblock"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
