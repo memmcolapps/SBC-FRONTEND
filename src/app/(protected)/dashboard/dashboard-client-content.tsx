@@ -1,4 +1,3 @@
-// src/app/(protected)/dashboard/dashboard-client-content.tsx
 'use client';
 
 import { useQuery } from "@tanstack/react-query";
@@ -13,7 +12,6 @@ import {
 } from "@/services/dashboard-service";
 import { useAuth } from "@/context/auth-context";
 
-// This hook remains unchanged.
 export function useDashboardData() {
     const { getAccessToken } = useAuth();
     return useQuery<DashboardData, Error>({
@@ -29,7 +27,6 @@ export function useDashboardData() {
     });
 }
 
-// This is the client component that uses the hook.
 export default function DashboardClientContent() {
     const {
         data: dashboardData,
@@ -40,8 +37,8 @@ export default function DashboardClientContent() {
 
     if (isLoading) {
         return (
-            <div className="flex h-screen items-center justify-center">
-                Loading...
+            <div className="flex h-64 items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#16085F] border-t-transparent"></div>
             </div>
         );
     }
@@ -49,7 +46,7 @@ export default function DashboardClientContent() {
     if (isError) {
         toast.error("Failed to load dashboard data: " + error.message);
         return (
-            <div className="flex h-screen items-center justify-center text-red-500">
+            <div className="flex h-64 items-center justify-center text-red-500">
                 Error: {error.message}
             </div>
         );
@@ -57,7 +54,7 @@ export default function DashboardClientContent() {
 
     if (!dashboardData) {
         return (
-            <div className="flex h-screen items-center justify-center">
+            <div className="flex h-64 items-center justify-center text-muted-foreground">
                 No data to display.
             </div>
         );
@@ -70,32 +67,33 @@ export default function DashboardClientContent() {
     } = dashboardData;
 
     return (
-        <div className="mb-10 h-screen space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-3xl font-bold">Dashboard</CardTitle>
-                </CardHeader>
-            </Card>
-            <div className="grid grid-cols-1 gap-6 text-xl md:grid-cols-3">
+        <div className="space-y-6">
+            <h1 className="text-2xl font-semibold">Dashboard</h1>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <DashboardStats
                     activeOperators={totalActiveOperators}
                     activeBreakers={totalBreakers}
                     alerts={3}
                 />
-                <Card className="md:col-span-2">
-                    <CardHeader>
-                        <CardTitle>Recent Activity</CardTitle>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base font-medium">Recent Activity</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <RecentActivity activities={recentActivity} />
                     </CardContent>
                 </Card>
-                <Card className="md:col-span-3">
-                    <CardHeader>
-                        <CardTitle>Breaker Status</CardTitle>
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base font-medium">Breaker Status</CardTitle>
                     </CardHeader>
-                    <BreakerChart />
-                    <CardContent></CardContent>
+                    <CardContent>
+                        <BreakerChart />
+                    </CardContent>
                 </Card>
             </div>
         </div>

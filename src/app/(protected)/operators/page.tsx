@@ -12,35 +12,31 @@ export default function OperatorsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-3xl font-bold">
-            Operator Management
-          </CardTitle>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                <PlusCircle className="w-4 h-4" size={14} />
-                Add Operator
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="w-fit h-fit bg-white">
-              <DialogHeader>
-                <DialogTitle>Create New Operator</DialogTitle>
-                <DialogDescription>
-                  Fill in the details to create a new operator account.
-                </DialogDescription>
-              </DialogHeader>
-              <AddOperatorForm onSuccess={() => setIsDialogOpen(false)} />
-            </DialogContent>
-          </Dialog>
-        </CardHeader>
-      </Card>
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Operator Management</h1>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="flex items-center gap-2 bg-[#16085F] hover:bg-[#1e0f7a]">
+              <PlusCircle className="h-4 w-4" />
+              Add Operator
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="w-fit h-fit bg-white">
+            <DialogHeader>
+              <DialogTitle>Create New Operator</DialogTitle>
+              <DialogDescription>
+                Fill in the details to create a new operator account.
+              </DialogDescription>
+            </DialogHeader>
+            <AddOperatorForm onSuccess={() => setIsDialogOpen(false)} />
+          </DialogContent>
+        </Dialog>
+      </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Operator List</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-medium">Operator List</CardTitle>
         </CardHeader>
         <CardContent>
           <OperatorManagementTable />

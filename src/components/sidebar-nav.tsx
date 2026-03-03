@@ -36,101 +36,104 @@ const navItems: NavItem[] = [
   {
     title: "Dashboard",
     href: "/dashboard",
-    icon: <LayoutDashboard size={20} className="shrink-0" />,
+    icon: <LayoutDashboard size={18} className="shrink-0" />,
   },
   {
-    title: "Operator Management",
+    title: "Operators",
     href: "/operators",
-    icon: <UserRound size={20} />,
+    icon: <UserRound size={18} />,
   },
   {
-    title: "Breaker Management",
+    title: "Breakers",
     href: "/breakers",
-    icon: <Grid size={20} />,
+    icon: <Grid size={18} />,
   },
   {
     title: "Notifications",
     href: "/notifications",
-    icon: <Bell size={20} />,
+    icon: <Bell size={18} />,
   },
   {
     title: "Audit Logs",
     href: "/audit",
-    icon: <FileText size={20} />,
+    icon: <FileText size={18} />,
   },
   {
     title: "Profile",
     href: "/profile",
-    icon: <UserRoundPen size={20} />,
+    icon: <UserRoundPen size={18} />,
   },
 ];
 
 export function SidebarNav() {
   const pathname = usePathname();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   return (
-    <Sidebar className="h-screen bg-[#dddbff] p-8">
-      <div className="flex h-full flex-col bg-[#ffffff]">
-        <SidebarHeader className="flex items-center justify-center pt-14">
-          <Link href="/" className="transition-opacity hover:opacity-80">
-            <div className="relative">
-              <Image
-                width={200}
-                height={43}
-                alt="MOMAS/EPAIL Logo"
-                src="/sea-logo.png"
-                className="mx-auto drop-shadow-lg"
-                priority
-                quality={90}
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent rounded-lg"></div>
-            </div>
-          </Link>
-        </SidebarHeader>
-        <SidebarContent className="flex-1 px-4 pt-8">
-          <SidebarMenu>
-            {navItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <SidebarMenuItem key={item.href} className="h-full">
-                  <SidebarMenuButton
-                    asChild
-                    className={cn(
-                      "group w-full rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-[#16085F] hover:to-[#2a1b8f] hover:text-[#ffffff] hover:shadow-lg hover:scale-105",
-                      isActive ? "bg-gradient-to-r from-[#16085F] to-[#2a1b8f] text-[#ffffff] shadow-lg" : "",
-                    )}
+    <Sidebar className="h-screen border-r border-gray-200 bg-white">
+      <SidebarHeader className="flex items-center justify-center border-b border-gray-100 px-6 py-6">
+        <Link href="/" className="transition-opacity hover:opacity-80">
+          <Image
+            width={150}
+            height={38}
+            alt="MOMAS/EPAIL Logo"
+            src="/sea-logo.png"
+            className="mx-auto"
+            priority
+            quality={90}
+          />
+        </Link>
+      </SidebarHeader>
+      <SidebarContent className="flex-1 px-3 py-4">
+        <SidebarMenu className="space-y-1">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                  asChild
+                  className={cn(
+                    "w-full rounded-lg transition-colors duration-150",
+                    isActive
+                      ? "bg-[#16085F] text-white shadow-sm"
+                      : "text-gray-600 hover:bg-[#eeecff] hover:text-[#16085F]",
+                  )}
+                >
+                  <Link
+                    href={item.href}
+                    className="flex items-center gap-3 px-3 py-2.5"
+                    aria-current={isActive ? "page" : undefined}
                   >
-                    <Link
-                      href={item.href}
-                      className="flex h-full items-center gap-3 px-4 py-3"
-                      aria-current={isActive ? "page" : undefined}
-                    >
-                      {item.icon}
-                      <span className="break-words text-lg font-medium transition-transform group-hover:translate-x-1">
-                        {item.title}
-                      </span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              );
-            })}
-          </SidebarMenu>
-        </SidebarContent>
-        <SidebarFooter className="border-t">
-          <SidebarMenu>
-            <SidebarMenuItem className="my-6">
-              <SidebarMenuButton
-                className="text-red-600 hover:bg-gradient-to-r hover:from-red-100 hover:to-red-200 hover:text-red-700 transition-all duration-300 hover:shadow-md"
-                onClick={logout}
-              >
-                <LogOut className="mr-2 h-4 w-4 transition-transform hover:scale-110" />
-                <span className="font-medium">Logout</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
-      </div>
+                    {item.icon}
+                    <span className="text-sm font-medium">{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarContent>
+      <SidebarFooter className="border-t border-gray-100 px-3 py-4">
+        {user && (
+          <div className="mb-3 px-3">
+            <p className="truncate text-sm font-medium text-gray-900">
+              {user.firstName} {user.lastName}
+            </p>
+            <p className="truncate text-xs text-gray-500">{user.email}</p>
+          </div>
+        )}
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              className="w-full rounded-lg text-gray-500 transition-colors duration-150 hover:bg-red-50 hover:text-red-600"
+              onClick={logout}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              <span className="text-sm font-medium">Logout</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }

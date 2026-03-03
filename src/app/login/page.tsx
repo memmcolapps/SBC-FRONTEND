@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/auth-context";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import Image from "next/image";
+import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -37,58 +39,74 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-[#dddbff]">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-md">
-        <h1 className="mb-6 text-center text-xl font-medium text-gray-700">
-          LOG IN TO YOUR ACCOUNT
+    <div className="flex min-h-screen items-center justify-center bg-[#eeedff]">
+      <div className="w-full max-w-sm rounded-xl bg-white p-8 shadow-lg">
+        <div className="mb-8 flex justify-center">
+          <Image
+            width={140}
+            height={35}
+            alt="MOMAS/EPAIL Logo"
+            src="/sea-logo.png"
+            priority
+            quality={90}
+          />
+        </div>
+
+        <h1 className="mb-6 text-center text-lg font-semibold text-gray-900">
+          Sign in to your account
         </h1>
+
         {error && (
           <Alert variant="destructive" className="mb-4">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-lg">
-          <div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-sm text-gray-600">Email</Label>
             <Input
+              id="email"
               type="email"
-              placeholder="Username"
+              placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full"
+              className="h-10"
               disabled={isLoading}
             />
           </div>
 
-          <div>
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-sm text-gray-600">Password</Label>
             <Input
+              id="password"
               type="password"
-              placeholder="Password"
+              placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full"
+              className="h-10"
               disabled={isLoading}
             />
           </div>
 
           <Button
             type="submit"
-            className="w-full bg-indigo-900 hover:bg-indigo-800"
+            className="w-full h-10 bg-[#16085F] hover:bg-[#1e0f7a]"
             disabled={isLoading}
           >
-            {isLoading ? "Logging in..." : "Log in"}
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Signing in...
+              </span>
+            ) : (
+              "Sign in"
+            )}
           </Button>
         </form>
       </div>
-
-      <Button
-        className="absolute bottom-4 right-4 rounded-full bg-indigo-900 hover:bg-indigo-800"
-        size="sm"
-      >
-        SUPPORT
-      </Button>
     </div>
   );
 }

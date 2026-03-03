@@ -8,7 +8,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Toaster } from "../ui/sonner";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 interface PasswordForm {
   newPassword: string;
@@ -131,12 +131,13 @@ export function ChangePasswordForm() {
       <Toaster />
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="relative rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700">
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
             {error}
           </div>
         )}
-        <div className="space-y-2">
-          <Label htmlFor="otp">OTP</Label>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="otp" className="text-sm text-gray-600">OTP</Label>
           <Input
             id="otp"
             type="text"
@@ -153,8 +154,8 @@ export function ChangePasswordForm() {
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="newPassword">New Password</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="newPassword" className="text-sm text-gray-600">New Password</Label>
           <div className="relative">
             <Input
               id="newPassword"
@@ -166,27 +167,28 @@ export function ChangePasswordForm() {
               required
               minLength={6}
               autoComplete="new-password"
+              placeholder="Enter new password"
               className="pr-10"
             />
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
               onClick={() => setShowPassword(prev => ({
                 ...prev,
                 newPassword: !prev.newPassword
               }))}
             >
               {showPassword.newPassword ? (
-                <EyeOff className="text-gray-200" />
+                <EyeOff className="h-4 w-4" />
               ) : (
-                <Eye className="text-gray-200" />
+                <Eye className="h-4 w-4" />
               )}
             </button>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="confirmPassword">Confirm New Password</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="confirmPassword" className="text-sm text-gray-600">Confirm New Password</Label>
           <div className="relative">
             <Input
               id="confirmPassword"
@@ -200,31 +202,36 @@ export function ChangePasswordForm() {
               }
               required
               autoComplete="new-password"
+              placeholder="Confirm new password"
               className="pr-10"
             />
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
               onClick={() => setShowPassword(prev => ({
                 ...prev,
                 confirmPassword: !prev.confirmPassword
               }))}
             >
               {showPassword.confirmPassword ? (
-                <EyeOff className="text-gray-200" />
+                <EyeOff className="h-4 w-4" />
               ) : (
-                <Eye className="text-gray-200" />
+                <Eye className="h-4 w-4" />
               )}
             </button>
           </div>
         </div>
-        <Button
-          type="submit"
-          className="bg-purple-600 hover:bg-purple-700"
-          disabled={isLoading}
-        >
-          {isLoading ? "Processing..." : "Change Password"}
-        </Button>
+
+        <div className="flex justify-end pt-2">
+          <Button
+            type="submit"
+            className="bg-[#16085F] hover:bg-[#1e0f7a]"
+            disabled={isLoading}
+          >
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isLoading ? "Processing..." : "Change Password"}
+          </Button>
+        </div>
       </form>
     </>
   );

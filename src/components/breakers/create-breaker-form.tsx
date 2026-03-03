@@ -15,6 +15,7 @@ import {
 import { useRegisterBreaker } from "@/hooks/use-breakers";
 import { useNigerianCities, useNigerianStates } from "@/hooks/use-location";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 interface FormData {
   sbcId: string;
@@ -45,10 +46,8 @@ export function CreateBreakerForm({ onSuccess }: CreateSBCFormProps) {
 
   const { mutate: registerBreakerMutation, isPending } = useRegisterBreaker();
 
-  // Fetch states
   const { data: states, isLoading: isLoadingStates, isError: isErrorStates } = useNigerianStates();
 
-  // Fetch cities based on selected state
   const {
     data: cities,
     isLoading: isLoadingCities,
@@ -80,7 +79,6 @@ export function CreateBreakerForm({ onSuccess }: CreateSBCFormProps) {
           breakerCounter: "",
           assetId: "",
         });
-        // Correctly call onSuccess here to close the dialog after a successful API call
         onSuccess();
       },
       onError: (error) => {
@@ -94,7 +92,7 @@ export function CreateBreakerForm({ onSuccess }: CreateSBCFormProps) {
     setFormData((prev) => ({
       ...prev,
       stateId: value,
-      cityId: "", // Reset city when state changes
+      cityId: "",
     }));
   };
 
@@ -109,162 +107,150 @@ export function CreateBreakerForm({ onSuccess }: CreateSBCFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-3">
-        <Label htmlFor="sbcId" className="text-lg">
-          SBC ID
-        </Label>
-        <Input
-          id="sbcId"
-          value={formData.sbcId}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, sbcId: e.target.value }))
-          }
-          placeholder="Enter SBC ID"
-          required
-          className="text-lg"
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="sbcId" className="text-sm text-gray-600">SBC ID</Label>
+          <Input
+            id="sbcId"
+            value={formData.sbcId}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, sbcId: e.target.value }))
+            }
+            placeholder="Enter SBC ID"
+            required
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="sbcName" className="text-sm text-gray-600">SBC Name</Label>
+          <Input
+            id="sbcName"
+            value={formData.name}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, name: e.target.value }))
+            }
+            placeholder="Enter SBC name"
+            required
+          />
+        </div>
       </div>
 
-      {/* State Dropdown */}
-      <div className="space-y-3">
-        <Label htmlFor="state" className="text-lg">
-          State
-        </Label>
-        <Select
-          value={formData.stateId}
-          onValueChange={handleStateChange}
-          disabled={isLoadingStates}
-          required
-        >
-          <SelectTrigger id="state">
-            <SelectValue placeholder={isLoadingStates ? "Loading states..." : "Select State"} />
-          </SelectTrigger>
-          <SelectContent>
-            {isErrorStates && <SelectItem value="error-states" disabled>Error loading states</SelectItem>}
-            {!isLoadingStates && states?.length === 0 && <SelectItem value="no-states-found" disabled>No states found</SelectItem>}
-            {states?.map((state) => (
-              <SelectItem key={state.id} value={state.id}>
-                {state.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="state" className="text-sm text-gray-600">State</Label>
+          <Select
+            value={formData.stateId}
+            onValueChange={handleStateChange}
+            disabled={isLoadingStates}
+            required
+          >
+            <SelectTrigger id="state">
+              <SelectValue placeholder={isLoadingStates ? "Loading..." : "Select State"} />
+            </SelectTrigger>
+            <SelectContent>
+              {isErrorStates && <SelectItem value="error-states" disabled>Error loading states</SelectItem>}
+              {!isLoadingStates && states?.length === 0 && <SelectItem value="no-states-found" disabled>No states found</SelectItem>}
+              {states?.map((state) => (
+                <SelectItem key={state.id} value={state.id}>
+                  {state.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="city" className="text-sm text-gray-600">City</Label>
+          <Select
+            value={formData.cityId}
+            onValueChange={handleCityChange}
+            disabled={!formData.stateId || isLoadingCities}
+            required
+          >
+            <SelectTrigger id="city">
+              <SelectValue
+                placeholder={
+                  isLoadingCities
+                    ? "Loading..."
+                    : formData.stateId
+                      ? "Select City"
+                      : "Select a state first"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {isErrorCities && <SelectItem value="error-cities" disabled>Error loading cities</SelectItem>}
+              {!isLoadingCities && cities?.length === 0 && formData.stateId && (
+                <SelectItem value="no-cities-found" disabled>No cities found</SelectItem>
+              )}
+              {cities?.map((city) => (
+                <SelectItem key={city.id} value={city.id}>
+                  {city.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* City Dropdown */}
-      <div className="space-y-3">
-        <Label htmlFor="city" className="text-lg">
-          City
-        </Label>
-        <Select
-          value={formData.cityId}
-          onValueChange={handleCityChange}
-          disabled={!formData.stateId || isLoadingCities}
-          required
-        >
-          <SelectTrigger id="city">
-            <SelectValue
-              placeholder={
-                isLoadingCities
-                  ? "Loading cities..."
-                  : formData.stateId
-                    ? "Select City"
-                    : "Select a state first"
-              }
-            />
-          </SelectTrigger>
-          <SelectContent>
-            {isErrorCities && <SelectItem value="error-cities" disabled>Error loading cities</SelectItem>}
-            {!isLoadingCities && cities?.length === 0 && formData.stateId && (
-              <SelectItem value="no-cities-found" disabled>No cities found for this state</SelectItem>
-            )}
-            {cities?.map((city) => (
-              <SelectItem key={city.id} value={city.id}>
-                {city.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-3">
-        <Label htmlFor="streetName" className="text-lg">
-          Street Name
-        </Label>
+      <div className="space-y-1.5">
+        <Label htmlFor="streetName" className="text-sm text-gray-600">Street Name</Label>
         <Input
           id="streetName"
           value={formData.streetName}
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, streetName: e.target.value }))
           }
-          placeholder="Enter The Street Name"
+          placeholder="Enter street name"
           required
-          className="text-lg"
         />
       </div>
 
-      <div className="space-y-3">
-        <Label htmlFor="sbcName" className="text-lg">
-          SBC Name
-        </Label>
-        <Input
-          id="sbcName"
-          value={formData.name}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, name: e.target.value }))
-          }
-          placeholder="Enter SBC name"
-          required
-          className="text-lg"
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="numberOfBreaker" className="text-sm text-gray-600">Breaker Count</Label>
+          <Select
+            value={formData.breakerCounter}
+            onValueChange={(value) =>
+              setFormData((prev) => ({ ...prev, breakerCounter: value }))
+            }
+            required
+          >
+            <SelectTrigger id="numberOfBreakers">
+              <SelectValue placeholder="Select count" />
+            </SelectTrigger>
+            <SelectContent>
+              {numberOfBreakersOptions.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="assetId" className="text-sm text-gray-600">Asset ID</Label>
+          <Input
+            id="assetId"
+            value={formData.assetId}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, assetId: e.target.value }))
+            }
+            placeholder="Enter Asset ID"
+            required
+          />
+        </div>
       </div>
 
-      <div className="space-y-3">
-        <Label htmlFor="numberOfBreaker" className="text-lg">
-          Breaker counter
-        </Label>
-        <Select
-          value={formData.breakerCounter}
-          onValueChange={(value) =>
-            setFormData((prev) => ({ ...prev, breakerCounter: value }))
-          }
-          required
-        >
-          <SelectTrigger id="numberOfBreakers">
-            <SelectValue placeholder="Select number of breakers" />
-          </SelectTrigger>
-          <SelectContent>
-            {numberOfBreakersOptions.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-3">
-        <Label htmlFor="assetId" className="text-lg">
-          Enter the Asset Id
-        </Label>
-        <Input
-          id="assetId"
-          value={formData.assetId}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, assetId: e.target.value }))
-          }
-          placeholder="Enter Asset Id"
-          required
-          className="text-lg"
-        />
-      </div>
-      <div className="flex justify-end">
+      <div className="flex justify-end pt-2">
         <Button
           type="submit"
-          className="bg-purple-600 hover:bg-purple-700"
+          className="bg-[#16085F] hover:bg-[#1e0f7a]"
           disabled={isPending || isLoadingStates || isLoadingCities || !isFormValid}
         >
-          {isPending ? "Creating Breaker..." : "Create Breaker"}
+          {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isPending ? "Creating..." : "Create Breaker"}
         </Button>
       </div>
     </form>

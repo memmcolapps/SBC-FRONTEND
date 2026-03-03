@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from "@/context/auth-context";
 import { updateUser } from "@/services";
+import { Loader2 } from "lucide-react";
 
 interface UserProfile {
   operator: {
@@ -40,7 +41,7 @@ export function UserProfileForm() {
     },
     role: {
       roleId: user?.roles?.[0]?.roleId || 0,
-      operatorRole: user?.roles?.[0]?.operatorRole || "ROLE_WRITE", // Adjust based on your user object structure
+      operatorRole: user?.roles?.[0]?.operatorRole || "ROLE_WRITE",
     },
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -118,51 +119,62 @@ export function UserProfileForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="operator.firstname">Firstname</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="operator.firstname" className="text-sm text-gray-600">First Name</Label>
           <Input
             id="operator.firstname"
             value={profile.operator.firstname}
             onChange={handleChange}
+            placeholder="Enter first name"
             required
           />
         </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="operator.lastname">Lastname</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="operator.lastname" className="text-sm text-gray-600">Last Name</Label>
           <Input
             id="operator.lastname"
             value={profile.operator.lastname}
             onChange={handleChange}
+            placeholder="Enter last name"
             required
           />
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="operator.email">Email</Label>
-        <Input
-          id="operator.email"
-          type="email"
-          value={profile.operator.email}
-          onChange={handleChange}
-          required
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="operator.email" className="text-sm text-gray-600">Email</Label>
+          <Input
+            id="operator.email"
+            type="email"
+            value={profile.operator.email}
+            onChange={handleChange}
+            placeholder="Enter email address"
+            required
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="operator.contact" className="text-sm text-gray-600">Contact</Label>
+          <Input
+            id="operator.contact"
+            value={profile.operator.contact}
+            onChange={handleChange}
+            placeholder="Enter contact number"
+            required
+          />
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="operator.contact">Contact</Label>
-        <Input
-          id="operator.contact"
-          value={profile.operator.contact}
-          onChange={handleChange}
-          required
-        />
+      <div className="flex justify-end pt-2">
+        <Button
+          type="submit"
+          className="bg-[#16085F] hover:bg-[#1e0f7a]"
+          disabled={isLoading}
+        >
+          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isLoading ? "Updating..." : "Update Profile"}
+        </Button>
       </div>
-
-      <Button type="submit" className="bg-purple-600 hover:bg-purple-700" disabled={isLoading}>
-        {isLoading ? "Updating..." : "Update profile"}
-      </Button>
     </form>
   );
 }

@@ -1,5 +1,4 @@
-// components/dashboard/stats.tsx
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Grid, TriangleAlert, Users } from "lucide-react";
 
 interface DashboardStatsProps {
@@ -13,40 +12,40 @@ export function DashboardStats({
   activeBreakers,
   alerts,
 }: DashboardStatsProps) {
+  const stats = [
+    {
+      label: "Active Operators",
+      value: activeOperators,
+      icon: <Users size={20} className="text-[#16085F]" />,
+      bg: "bg-[#eeecff]",
+    },
+    {
+      label: "Active Breakers",
+      value: activeBreakers,
+      icon: <Grid size={20} className="text-[#16085F]" />,
+      bg: "bg-[#eeecff]",
+    },
+    {
+      label: "Alerts",
+      value: alerts,
+      icon: <TriangleAlert size={20} className="text-amber-600" />,
+      bg: "bg-amber-50",
+    },
+  ];
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Statistics</CardTitle>
-      </CardHeader>
-      <CardContent className="pt-6 text-xl">
-        <div className="space-y-7">
-          <div className="mr-10 flex justify-between">
-            <div className="flex items-center">
-              <Users size={15} />
-              <span className="ml-2 text-muted-foreground">
-                Active Operators:
-              </span>
+    <>
+      {stats.map((stat) => (
+        <Card key={stat.label}>
+          <CardContent className="flex items-center gap-4 p-5">
+            <div className={`rounded-lg p-2.5 ${stat.bg}`}>{stat.icon}</div>
+            <div>
+              <p className="text-sm text-muted-foreground">{stat.label}</p>
+              <p className="text-2xl font-semibold">{stat.value}</p>
             </div>
-            <span>{activeOperators}</span>
-          </div>
-          <div className="mr-10 flex justify-between">
-            <div className="flex items-center">
-              <Grid size={15} />
-              <span className="ml-2 text-muted-foreground">
-                Active Breakers
-              </span>
-            </div>
-            <span>{activeBreakers}</span>
-          </div>
-          <div className="mr-10 flex justify-between">
-            <div className="flex items-center">
-              <TriangleAlert size={15} />
-              <span className="ml-2 text-muted-foreground">Alerts</span>
-            </div>
-            <span>{alerts}</span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+          </CardContent>
+        </Card>
+      ))}
+    </>
   );
 }

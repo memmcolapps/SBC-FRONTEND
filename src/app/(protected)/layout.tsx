@@ -24,8 +24,8 @@ export default function ProtectedLayout({
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-purple-500"></div>
+      <div className="flex min-h-screen items-center justify-center bg-[#eeedff]">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#16085F] border-t-transparent"></div>
       </div>
     );
   }
@@ -36,9 +36,9 @@ export default function ProtectedLayout({
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full overflow-hidden">
+      <div className="flex h-screen w-full overflow-hidden bg-[#eeedff]">
         <SidebarNav />
-        <main className="flex-1 overflow-auto p-8">{children}</main>
+        <main className="flex-1 overflow-auto p-6">{children}</main>
       </div>
     </SidebarProvider>
   );

@@ -11,7 +11,6 @@ import { toast } from "sonner";
 
 const roles = ["READ", "WRITE", "ADMIN"];
 
-// Define the props interface to accept the onSuccess callback
 interface AddOperatorFormProps {
   onSuccess: () => void;
 }
@@ -32,7 +31,6 @@ export function AddOperatorForm({ onSuccess }: AddOperatorFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Submitting operator:", formData);
     createOperator(formData, {
       onSuccess: (data) => {
         console.log("Operator creation successful:", data);
@@ -48,7 +46,6 @@ export function AddOperatorForm({ onSuccess }: AddOperatorFormProps) {
           permission: true,
           role: "READ",
         });
-        // Call the onSuccess callback to signal the parent component to close the dialog
         onSuccess();
       },
       onError: (error) => {
@@ -69,112 +66,128 @@ export function AddOperatorForm({ onSuccess }: AddOperatorFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="firstName">First Name</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="firstName" className="text-sm text-gray-600">First Name</Label>
           <Input
             id="firstName"
             value={formData.firstname}
             onChange={(e) => setFormData((prev) => ({ ...prev, firstname: e.target.value }))}
+            placeholder="Enter first name"
             required
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="lastName">Last Name</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="lastName" className="text-sm text-gray-600">Last Name</Label>
           <Input
             id="lastName"
             value={formData.lastname}
             onChange={(e) => setFormData((prev) => ({ ...prev, lastname: e.target.value }))}
+            placeholder="Enter last name"
             required
           />
         </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          value={formData.email}
-          onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-          required
-        />
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="email" className="text-sm text-gray-600">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+            placeholder="Enter email address"
+            required
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="password" className="text-sm text-gray-600">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            value={formData.password}
+            onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
+            placeholder="Enter password"
+            required
+          />
+        </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          value={formData.password}
-          onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
-          required
-        />
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="contact" className="text-sm text-gray-600">Phone Number</Label>
+          <Input
+            id="contact"
+            value={formData.phoneNumber}
+            onChange={(e) => setFormData((prev) => ({ ...prev, phoneNumber: e.target.value }))}
+            placeholder="Enter phone number"
+            required
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="position" className="text-sm text-gray-600">Position</Label>
+          <Input
+            id="position"
+            value={formData.position}
+            onChange={(e) => setFormData((prev) => ({ ...prev, position: e.target.value.toUpperCase() }))}
+            placeholder="Enter position"
+            required
+          />
+        </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="contact">Contact</Label>
-        <Input
-          id="contact"
-          value={formData.phoneNumber}
-          onChange={(e) => setFormData((prev) => ({ ...prev, phoneNumber: e.target.value }))}
-          required
-        />
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="location" className="text-sm text-gray-600">Location (State)</Label>
+          <Select
+            value={formData.location}
+            onValueChange={(value) => setFormData((prev) => ({ ...prev, location: value }))}
+          >
+            <SelectTrigger id="location">
+              <SelectValue placeholder="Select state" />
+            </SelectTrigger>
+            <SelectContent>
+              {[
+                "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno",
+                "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu", "FCT", "Gombe", "Imo",
+                "Jigawa", "Kaduna", "Kano", "Katsina", "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa",
+                "Niger", "Ogun", "Ondo", "Osun", "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba",
+                "Yobe", "Zamfara"
+              ].map((state) => (
+                <SelectItem key={state} value={state}>
+                  {state}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="role" className="text-sm text-gray-600">Role</Label>
+          <Select
+            value={formData.role}
+            onValueChange={(value) => setFormData((prev) => ({ ...prev, role: value }))}
+          >
+            <SelectTrigger id="role">
+              <SelectValue placeholder="Select role" />
+            </SelectTrigger>
+            <SelectContent>
+              {roles.map((role) => (
+                <SelectItem key={role} value={role}>
+                  {role}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="position">Position</Label>
-        <Input
-          id="position"
-          value={formData.position}
-          onChange={(e) => setFormData((prev) => ({ ...prev, position: e.target.value.toUpperCase() }))}
-          required
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="location">Location (State)</Label>
-        <Select
-          value={formData.location}
-          onValueChange={(value) => setFormData((prev) => ({ ...prev, location: value }))}
-        >
-          <SelectTrigger>
-        <SelectValue placeholder="Select state" />
-          </SelectTrigger>
-          <SelectContent>
-        {[
-          "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno",
-          "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu", "FCT", "Gombe", "Imo",
-          "Jigawa", "Kaduna", "Kano", "Katsina", "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa",
-          "Niger", "Ogun", "Ondo", "Osun", "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba",
-          "Yobe", "Zamfara"
-        ].map((state) => (
-          <SelectItem key={state} value={state}>
-            {state}
-          </SelectItem>
-        ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="role">Role</Label>
-        <Select
-          value={formData.role}
-          onValueChange={(value) => setFormData((prev) => ({ ...prev, role: value }))}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select role" />
-          </SelectTrigger>
-          <SelectContent>
-            {roles.map((role) => (
-              <SelectItem key={role} value={role}>
-                {role}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="permission">Permission</Label>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="permission" className="text-sm text-gray-600">Permission</Label>
         <Select
           value={formData.permission ? "true" : "false"}
           onValueChange={(value) => setFormData((prev) => ({ ...prev, permission: value === "true" }))}
         >
-          <SelectTrigger>
+          <SelectTrigger id="permission">
             <SelectValue placeholder="Select permission" />
           </SelectTrigger>
           <SelectContent>
@@ -183,11 +196,16 @@ export function AddOperatorForm({ onSuccess }: AddOperatorFormProps) {
           </SelectContent>
         </Select>
       </div>
-      <div className="flex justify-end items-end">
-      <Button type="submit" disabled={isPending || !isFormValid} className="cursor-pointer">
-        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-        {isPending ? "Creating..." : "Create Operator"}
-      </Button>
+
+      <div className="flex justify-end pt-2">
+        <Button
+          type="submit"
+          className="bg-[#16085F] hover:bg-[#1e0f7a]"
+          disabled={isPending || !isFormValid}
+        >
+          {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isPending ? "Creating..." : "Create Operator"}
+        </Button>
       </div>
     </form>
   );

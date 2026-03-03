@@ -29,17 +29,18 @@ const data = [
 
 const BreakerChart = () => {
   return (
-    <ResponsiveContainer width="100%" height={300} className="text-sm">
+    <ResponsiveContainer width="100%" height={280} className="text-xs">
       <BarChart
         data={data}
-        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+        margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
       >
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="month" />
-        <YAxis />
-        <Tooltip />
-        <Legend />
-        <Bar dataKey="value" fill="#8884d8" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+        <XAxis dataKey="month" tick={{ fill: "#6b7280" }} />
+        <YAxis tick={{ fill: "#6b7280" }} />
+        <Tooltip
+          contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "12px" }}
+        />
+        <Bar dataKey="value" fill="#16085F" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

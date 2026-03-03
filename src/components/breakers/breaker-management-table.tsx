@@ -18,7 +18,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { type Breaker } from "@/types/breakers";
 import React from "react";
-import { MoreVertical } from "lucide-react";
+import { Loader2, MoreVertical } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -242,13 +242,9 @@ export function BreakerManagementTable() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <div className="flex justify-between">
-          <Skeleton className="h-10 w-32" />
-          <Skeleton className="h-10 w-64" />
-        </div>
+      <div className="space-y-3">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-16 w-full" />
+          <Skeleton key={i} className="h-12 w-full rounded-md" />
         ))}
       </div>
     );
@@ -256,37 +252,34 @@ export function BreakerManagementTable() {
 
   if (isError) {
     return (
-      <div className="rounded-md bg-destructive/10 p-4 text-destructive">
+      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
         Failed to load breakers
       </div>
     );
   }
 
   if (!breakers.length) {
-    return <div className="py-8 text-center">No breakers found</div>;
+    return (
+      <div className="py-12 text-center text-sm text-gray-500">
+        No breakers found
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="space-x-2">
-          <Button variant="outline">Filter</Button>
-          <Button variant="outline">Sort</Button>
-        </div>
-      </div>
-
-      <div className="rounded-md border">
+      <div className="rounded-lg border border-gray-200">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>SBC ID</TableHead>
-              <TableHead>Asset Id</TableHead>
+              <TableHead>Asset ID</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Location</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Breaker Count</TableHead>
+              <TableHead>Breakers</TableHead>
               <TableHead>Date Added</TableHead>
-              <TableHead>Action</TableHead>
+              <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -295,37 +288,38 @@ export function BreakerManagementTable() {
                 <TableRow
                   className={`cursor-pointer ${
                     breaker.status === "INACTIVE"
-                      ? "bg-gray-100 text-gray-400"
-                      : "hover:bg-gray-50"
+                      ? "bg-gray-50 text-gray-400"
+                      : "hover:bg-gray-50/50"
                   }`}
                   onClick={() => handleViewDetails(breaker)}
                 >
-                  <TableCell>{breaker.sbcId}</TableCell>
-                  <TableCell>{breaker.assetId}</TableCell>
+                  <TableCell className="font-medium">{breaker.sbcId}</TableCell>
+                  <TableCell className="text-gray-600">{breaker.assetId}</TableCell>
                   <TableCell>{breaker.name}</TableCell>
-                  <TableCell>
-                    {breaker.city}, {breaker.state}, {breaker.streetName}
+                  <TableCell className="text-gray-600">
+                    {breaker.city}, {breaker.state}
                   </TableCell>
                   <TableCell>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    <Badge
+                      variant="outline"
+                      className={
                         breaker.status === "ACTIVE"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
+                          ? "border-green-200 bg-green-50 text-green-700"
+                          : "border-red-200 bg-red-50 text-red-700"
+                      }
                     >
                       {breaker.status}
-                    </span>
+                    </Badge>
                   </TableCell>
-                  <TableCell>{breaker.breakerCount}</TableCell>
-                  <TableCell>
-                    {new Date(breaker.createdAt).toLocaleString()}
+                  <TableCell className="text-gray-600">{breaker.breakerCount}</TableCell>
+                  <TableCell className="text-gray-500">
+                    {new Date(breaker.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu modal={false}>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical className="h-4 w-4" size={16} />
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
@@ -359,7 +353,7 @@ export function BreakerManagementTable() {
                 </TableRow>
                 {breaker.isExpanded && (
                   <TableRow className="bg-gray-50">
-                    <TableCell colSpan={9}>
+                    <TableCell colSpan={8}>
                       <div className="flex justify-end gap-2 p-2">
                         {Object.entries(breaker.buttons)
                           .filter(([_, show]) => show)
@@ -367,6 +361,7 @@ export function BreakerManagementTable() {
                             <Button
                               key={btnId}
                               variant={isActive ? "default" : "outline"}
+                              size="sm"
                               className={
                                 isActive
                                   ? "bg-green-600 hover:bg-green-700"
@@ -388,18 +383,19 @@ export function BreakerManagementTable() {
         </Table>
       </div>
 
+      {/* Confirm Action Dialog */}
       <Dialog
         open={dialogState.isOpen}
         onOpenChange={() =>
           setDialogState({ isOpen: false, breakerId: null, action: null })
         }
       >
-        <DialogContent className="w-full bg-white">
+        <DialogContent className="sm:max-w-[400px] bg-white">
           <DialogHeader>
             <DialogTitle>Confirm Action</DialogTitle>
             <DialogDescription>
               Are you sure you want to{" "}
-              <span className="font-bold">
+              <span className="font-semibold">
                 {dialogState.action === "activate" ? "activate" : "deactivate"}
               </span>{" "}
               this breaker?
@@ -416,104 +412,110 @@ export function BreakerManagementTable() {
             </Button>
             <Button
               onClick={confirmAction}
-              variant={
-                dialogState.action === "deactivate" ? "destructive" : "default"
+              className={
+                dialogState.action === "deactivate"
+                  ? "bg-red-600 hover:bg-red-700"
+                  : "bg-[#16085F] hover:bg-[#1e0f7a]"
               }
               disabled={changeStateMutation.isPending}
             >
+              {changeStateMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               {changeStateMutation.isPending ? "Processing..." : "Confirm"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
+      {/* View Details Dialog */}
       <Dialog
         open={viewDetails.isOpen}
         onOpenChange={() => setViewDetails({ isOpen: false, breaker: null })}
       >
-        <DialogContent className="h-fit w-full bg-white">
+        <DialogContent className="sm:max-w-[500px] bg-white">
           <DialogHeader>
             <DialogTitle>Breaker Details</DialogTitle>
             <DialogDescription>
-              Comprehensive information for Breaker:{" "}
-              <span className="font-bold">{viewDetails.breaker?.name}</span>
+              Information for{" "}
+              <span className="font-semibold">{viewDetails.breaker?.name}</span>
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>{viewDetails.breaker?.sbcId}</CardTitle>
+          <div className="space-y-4 py-2">
+            <Card className="border-gray-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">{viewDetails.breaker?.sbcId}</CardTitle>
                 <CardDescription>
                   Asset ID: {viewDetails.breaker?.assetId}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <span className="font-medium">Location:</span>
+              <CardContent className="space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">Location</span>
                   <span>
                     {viewDetails.breaker?.streetName},{" "}
                     {viewDetails.breaker?.city}, {viewDetails.breaker?.state}
                   </span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className="font-medium">Status:</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">Status</span>
                   <Badge
                     variant="outline"
-                    className={`${
+                    className={
                       viewDetails.breaker?.status === "ACTIVE"
-                        ? "bg-green-500 text-white"
-                        : "bg-red-500 text-white"
-                    }`}
+                        ? "border-green-200 bg-green-50 text-green-700"
+                        : "border-red-200 bg-red-50 text-red-700"
+                    }
                   >
                     {viewDetails.breaker?.status}
                   </Badge>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className="font-medium">Breaker Count:</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">Breaker Count</span>
                   <span>{viewDetails.breaker?.breakerCount}</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className="font-medium">Date Added:</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">Date Added</span>
                   <span>
                     {viewDetails.breaker?.createdAt
-                      ? new Date(viewDetails.breaker.createdAt).toLocaleString()
+                      ? new Date(viewDetails.breaker.createdAt).toLocaleDateString()
                       : "N/A"}
                   </span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Assigned Operators</CardTitle>
+            <Card className="border-gray-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Assigned Operators</CardTitle>
                 <CardDescription>
                   Operators who have access to this breaker.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-2">
+                <div className="space-y-2">
                   {viewDetails.breaker?.access &&
                   viewDetails.breaker.access.length > 0 ? (
                     viewDetails.breaker.access.map((item, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between border-b pb-2 last:border-b-0 last:pb-0"
+                        className="flex items-center justify-between border-b border-gray-100 pb-2 last:border-b-0 last:pb-0"
                       >
                         <div>
-                          <p className="font-medium">
+                          <p className="text-sm font-medium">
                             {item.operator?.firstname} {item.operator?.lastname}
                           </p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-xs text-gray-500">
                             {item.operator?.phoneNumber}
                           </p>
                         </div>
-                        <Badge variant="secondary">
+                        <Badge variant="secondary" className="text-xs">
                           {item.operator?.position}
                         </Badge>
                       </div>
                     ))
                   ) : (
-                    <p className="text-gray-500">No operators assigned.</p>
+                    <p className="text-sm text-gray-500">No operators assigned.</p>
                   )}
                 </div>
               </CardContent>
@@ -521,9 +523,7 @@ export function BreakerManagementTable() {
           </div>
           <DialogFooter>
             <Button
-              type="button"
-              variant="secondary"
-              className="focus:ring-gray300/10 border-gray-800"
+              variant="outline"
               onClick={() => setViewDetails({ isOpen: false, breaker: null })}
             >
               Close
@@ -532,32 +532,58 @@ export function BreakerManagementTable() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Dialog */}
       <Dialog
         open={editDialog.isOpen}
         onOpenChange={(open) => {
           if (!open) setEditDialog({ isOpen: false, breaker: null });
         }}
       >
-        <DialogContent className="w-full bg-white">
+        <DialogContent className="sm:max-w-[480px] bg-white">
           <DialogHeader>
             <DialogTitle>Edit Breaker</DialogTitle>
             <DialogDescription>
-              Update the details for breaker: {editDialog.breaker?.sbcId}
+              Update details for {editDialog.breaker?.sbcId}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Name</Label>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-name" className="text-sm text-gray-600">Name</Label>
               <Input
                 id="edit-name"
                 value={editForm.name}
                 onChange={(e) =>
                   setEditForm((prev) => ({ ...prev, name: e.target.value }))
                 }
+                placeholder="Enter name"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-street">Street Name</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-city" className="text-sm text-gray-600">City</Label>
+                <Input
+                  id="edit-city"
+                  value={editForm.city}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({ ...prev, city: e.target.value }))
+                  }
+                  placeholder="Enter city"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-state" className="text-sm text-gray-600">State</Label>
+                <Input
+                  id="edit-state"
+                  value={editForm.state}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({ ...prev, state: e.target.value }))
+                  }
+                  placeholder="Enter state"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-street" className="text-sm text-gray-600">Street Name</Label>
               <Input
                 id="edit-street"
                 value={editForm.streetName}
@@ -567,36 +593,18 @@ export function BreakerManagementTable() {
                     streetName: e.target.value,
                   }))
                 }
+                placeholder="Enter street name"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-city">City</Label>
-              <Input
-                id="edit-city"
-                value={editForm.city}
-                onChange={(e) =>
-                  setEditForm((prev) => ({ ...prev, city: e.target.value }))
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-state">State</Label>
-              <Input
-                id="edit-state"
-                value={editForm.state}
-                onChange={(e) =>
-                  setEditForm((prev) => ({ ...prev, state: e.target.value }))
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-asset">Asset ID</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-asset" className="text-sm text-gray-600">Asset ID</Label>
               <Input
                 id="edit-asset"
                 value={editForm.assetId}
                 onChange={(e) =>
                   setEditForm((prev) => ({ ...prev, assetId: e.target.value }))
                 }
+                placeholder="Enter asset ID"
               />
             </div>
           </div>
@@ -609,8 +617,12 @@ export function BreakerManagementTable() {
             </Button>
             <Button
               onClick={handleEditSubmit}
+              className="bg-[#16085F] hover:bg-[#1e0f7a]"
               disabled={editMutation.isPending}
             >
+              {editMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               {editMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>

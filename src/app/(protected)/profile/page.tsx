@@ -30,7 +30,7 @@ export default function ProfilePage() {
     setGeneratingOtp(true);
     try {
       const response = await generateOtpApi(user.email, token);
-      
+
       toast.success(response.responsedesc || "OTP generated successfully", {
         description: "Check your email for the OTP code.",
       });
@@ -45,16 +45,12 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-3xl font-bold">Profile</CardTitle>
-        </CardHeader>
-      </Card>
+    <div className="space-y-5">
+      <h1 className="text-2xl font-semibold">Profile</h1>
 
       <Card>
-        <CardHeader>
-          <CardTitle>User Profile</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-medium">User Profile</CardTitle>
         </CardHeader>
         <CardContent>
           <UserProfileForm />
@@ -62,15 +58,16 @@ export default function ProfilePage() {
       </Card>
 
       <Card>
-        <CardHeader className="flex justify-between flex-row-reverse">
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <CardTitle className="text-base font-medium">Change Password</CardTitle>
           <Button
-            className="bg-purple-600 hover:bg-purple-700 text-md"
+            className="bg-[#16085F] hover:bg-[#1e0f7a]"
+            size="sm"
             disabled={generatingOtp}
             onClick={handleGenerateOtp}
           >
             {generatingOtp ? "Sending OTP..." : "Send OTP"}
           </Button>
-          <CardTitle>Change Password</CardTitle>
         </CardHeader>
         <CardContent>
           <ChangePasswordForm />

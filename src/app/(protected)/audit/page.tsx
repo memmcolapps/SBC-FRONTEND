@@ -30,7 +30,7 @@ export default function AuditPage() {
   const handlePageSizeChange = (value: string) => {
     const newSize = Number(value);
     setSize(newSize);
-    setPage(0); // Reset to first page when size changes
+    setPage(0);
   };
 
   const handleNextPage = () => {
@@ -50,16 +50,12 @@ export default function AuditPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-3xl font-bold">Audit Logs</CardTitle>
-        </CardHeader>
-      </Card>
+    <div className="space-y-5">
+      <h1 className="text-2xl font-semibold">Audit Logs</h1>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Audit Logs</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-medium">Log History</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <AuditLogFilters
@@ -85,12 +81,12 @@ export default function AuditPage() {
             </div>
           ) : logsData ? (
             <>
-              {console.log("Audit logs data:", logsData)}
               <AuditLogTable auditLogs={logsData.data} />
               <div className="mt-4 flex flex-col items-center justify-between gap-4 sm:flex-row">
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
+                    size="sm"
                     onClick={handlePrevPage}
                     disabled={page === 0}
                   >
@@ -98,6 +94,7 @@ export default function AuditPage() {
                   </Button>
                   <Button
                     variant="outline"
+                    size="sm"
                     onClick={handleNextPage}
                     disabled={!logsData || page >= logsData.totalPages - 1}
                   >
@@ -105,13 +102,13 @@ export default function AuditPage() {
                   </Button>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span>Items per page:</span>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">Items per page:</span>
                   <Select
                     value={size.toString()}
                     onValueChange={handlePageSizeChange}
                   >
-                    <SelectTrigger className="w-20">
+                    <SelectTrigger className="w-20 h-8">
                       <SelectValue placeholder={size} />
                     </SelectTrigger>
                     <SelectContent>
