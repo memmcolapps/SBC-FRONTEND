@@ -228,7 +228,7 @@ export const editBreaker = async (
   token: string,
 ): Promise<EditBreakerResult> => {
   try {
-    const response = await axios.patch(
+    const response = await axios.put(
       `${API_BASE_URL}/v1/api/breaker/service/update`,
       payload,
       {
