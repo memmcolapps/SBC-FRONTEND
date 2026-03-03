@@ -5,9 +5,11 @@ import {
   registerBreaker,
   assignBreakers,
   changeBreakerState,
+  editBreaker,
   type RegisterBreakerPayload,
   type RegisterBreakerResponse,
   type AssignBreakersPayload,
+  type EditBreakerPayload,
 } from "@/services/breakers-service";
 import { type Breaker, type BreakerFilters } from "@/types/breakers";
 import { useAuth } from "@/context/auth-context";
@@ -109,4 +111,31 @@ export const useChangeBreakerState = () => {
     },
   });
 };
+
+export const useEditBreaker = () => {
+  const { getAccessToken } = useAuth();
+  const token = getAccessToken();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: EditBreakerPayload) => {
+      if (!token) {
+        throw new Error("No token found in local storage");
+      }
+      const response = await editBreaker(payload, token);
+      if (!response.success) {
+        throw new Error(response.error);
+      }
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["breakers"] });
+      toast.success("Breaker updated successfully!");
+    },
+    onError: (error) => {
+      toast.error("Failed to update breaker: " + error.message);
+    },
+  });
+};
+
 export { AssignBreakersPayload };

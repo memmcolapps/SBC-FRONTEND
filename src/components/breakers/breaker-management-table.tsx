@@ -10,7 +10,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useBreakers, useChangeBreakerState } from "@/hooks/use-breakers";
+import {
+  useBreakers,
+  useChangeBreakerState,
+  useEditBreaker,
+} from "@/hooks/use-breakers";
 import { Skeleton } from "@/components/ui/skeleton";
 import { type Breaker } from "@/types/breakers";
 import React from "react";
@@ -30,6 +34,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -38,7 +44,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-interface ExpandedBreaker extends Omit<Breaker, 'status'> {
+interface ExpandedBreaker extends Omit<Breaker, "status"> {
   isExpanded: boolean;
   buttons: Record<string, boolean>;
   lastAction?: string;
@@ -49,11 +55,16 @@ export function BreakerManagementTable() {
   const [localModifications, setLocalModifications] = useState<
     Record<string, Partial<ExpandedBreaker>>
   >({});
-  const { data = [], isLoading, isError } = useBreakers({
+  const {
+    data = [],
+    isLoading,
+    isError,
+  } = useBreakers({
     page: 0,
     size: 10,
   });
   const changeStateMutation = useChangeBreakerState();
+  const editMutation = useEditBreaker();
 
   const [dialogState, setDialogState] = useState<{
     isOpen: boolean;
@@ -71,6 +82,22 @@ export function BreakerManagementTable() {
   }>({
     isOpen: false,
     breaker: null,
+  });
+
+  const [editDialog, setEditDialog] = useState<{
+    isOpen: boolean;
+    breaker: ExpandedBreaker | null;
+  }>({
+    isOpen: false,
+    breaker: null,
+  });
+
+  const [editForm, setEditForm] = useState({
+    name: "",
+    streetName: "",
+    city: "",
+    state: "",
+    assetId: "",
   });
 
   const breakers = useMemo(() => {
@@ -102,9 +129,35 @@ export function BreakerManagementTable() {
     });
   }, [data, localModifications]);
 
-
   const handleViewDetails = (breaker: ExpandedBreaker) => {
     setViewDetails({ isOpen: true, breaker });
+  };
+
+  const handleEditClick = (breaker: ExpandedBreaker) => {
+    setEditDialog({ isOpen: true, breaker });
+    setEditForm({
+      name: breaker.name,
+      streetName: breaker.streetName,
+      city: breaker.city,
+      state: breaker.state,
+      assetId: breaker.assetId,
+    });
+  };
+
+  const handleEditSubmit = () => {
+    if (!editDialog.breaker) return;
+
+    editMutation.mutate(
+      { id: editDialog.breaker.id, ...editForm },
+      {
+        onSuccess: () => {
+          setEditDialog({ isOpen: false, breaker: null });
+        },
+        onError: () => {
+          setEditDialog({ isOpen: false, breaker: null });
+        },
+      },
+    );
   };
 
   const toggleButton = (sbcId: string, buttonId: string) => {
@@ -129,7 +182,10 @@ export function BreakerManagementTable() {
     });
   };
 
-  const handleActionClick = (breakerId: string, action: "activate" | "deactivate") => {
+  const handleActionClick = (
+    breakerId: string,
+    action: "activate" | "deactivate",
+  ) => {
     setDialogState({ isOpen: true, breakerId: breakerId, action });
   };
 
@@ -139,7 +195,7 @@ export function BreakerManagementTable() {
     }
     const { breakerId, action } = dialogState;
     const newState = action === "activate";
-    const breaker = breakers.find(b => b.sbcId === breakerId);
+    const breaker = breakers.find((b) => b.sbcId === breakerId);
 
     if (!breaker) {
       return;
@@ -180,10 +236,10 @@ export function BreakerManagementTable() {
         onError: () => {
           setDialogState({ isOpen: false, breakerId: null, action: null });
         },
-      }
+      },
     );
   };
-  
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -238,7 +294,9 @@ export function BreakerManagementTable() {
               <React.Fragment key={breaker.sbcId}>
                 <TableRow
                   className={`cursor-pointer ${
-                    breaker.status === "INACTIVE" ? "bg-gray-100 text-gray-400" : "hover:bg-gray-50"
+                    breaker.status === "INACTIVE"
+                      ? "bg-gray-100 text-gray-400"
+                      : "hover:bg-gray-50"
                   }`}
                   onClick={() => handleViewDetails(breaker)}
                 >
@@ -274,15 +332,23 @@ export function BreakerManagementTable() {
                         {breaker.status === "ACTIVE" ? (
                           <>
                             <DropdownMenuItem
-                              onClick={() => handleActionClick(breaker.sbcId, "deactivate")}
+                              onClick={() =>
+                                handleActionClick(breaker.sbcId, "deactivate")
+                              }
                             >
                               Deactivate
                             </DropdownMenuItem>
-                            <DropdownMenuItem>Edit</DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleEditClick(breaker)}
+                            >
+                              Edit
+                            </DropdownMenuItem>
                           </>
                         ) : (
                           <DropdownMenuItem
-                            onClick={() => handleActionClick(breaker.sbcId, "activate")}
+                            onClick={() =>
+                              handleActionClick(breaker.sbcId, "activate")
+                            }
                           >
                             Activate
                           </DropdownMenuItem>
@@ -324,9 +390,11 @@ export function BreakerManagementTable() {
 
       <Dialog
         open={dialogState.isOpen}
-        onOpenChange={() => setDialogState({ isOpen: false, breakerId: null, action: null })}
+        onOpenChange={() =>
+          setDialogState({ isOpen: false, breakerId: null, action: null })
+        }
       >
-        <DialogContent className="bg-white w-full">
+        <DialogContent className="w-full bg-white">
           <DialogHeader>
             <DialogTitle>Confirm Action</DialogTitle>
             <DialogDescription>
@@ -340,13 +408,17 @@ export function BreakerManagementTable() {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setDialogState({ isOpen: false, breakerId: null, action: null })}
+              onClick={() =>
+                setDialogState({ isOpen: false, breakerId: null, action: null })
+              }
             >
               Cancel
             </Button>
             <Button
               onClick={confirmAction}
-              variant={dialogState.action === "deactivate" ? "destructive" : "default"}
+              variant={
+                dialogState.action === "deactivate" ? "destructive" : "default"
+              }
               disabled={changeStateMutation.isPending}
             >
               {changeStateMutation.isPending ? "Processing..." : "Confirm"}
@@ -359,7 +431,7 @@ export function BreakerManagementTable() {
         open={viewDetails.isOpen}
         onOpenChange={() => setViewDetails({ isOpen: false, breaker: null })}
       >
-        <DialogContent className="w-full h-fit bg-white">
+        <DialogContent className="h-fit w-full bg-white">
           <DialogHeader>
             <DialogTitle>Breaker Details</DialogTitle>
             <DialogDescription>
@@ -379,8 +451,8 @@ export function BreakerManagementTable() {
                 <div className="flex items-center space-x-2">
                   <span className="font-medium">Location:</span>
                   <span>
-                    {viewDetails.breaker?.streetName}, {viewDetails.breaker?.city},{" "}
-                    {viewDetails.breaker?.state}
+                    {viewDetails.breaker?.streetName},{" "}
+                    {viewDetails.breaker?.city}, {viewDetails.breaker?.state}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -403,7 +475,9 @@ export function BreakerManagementTable() {
                 <div className="flex items-center space-x-2">
                   <span className="font-medium">Date Added:</span>
                   <span>
-                    {viewDetails.breaker?.createdAt ? new Date(viewDetails.breaker.createdAt).toLocaleString() : 'N/A'}
+                    {viewDetails.breaker?.createdAt
+                      ? new Date(viewDetails.breaker.createdAt).toLocaleString()
+                      : "N/A"}
                   </span>
                 </div>
               </CardContent>
@@ -418,16 +492,24 @@ export function BreakerManagementTable() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-2">
-                  {viewDetails.breaker?.access && viewDetails.breaker.access.length > 0 ? (
+                  {viewDetails.breaker?.access &&
+                  viewDetails.breaker.access.length > 0 ? (
                     viewDetails.breaker.access.map((item, index) => (
-                      <div key={index} className="flex justify-between items-center border-b pb-2 last:border-b-0 last:pb-0">
+                      <div
+                        key={index}
+                        className="flex items-center justify-between border-b pb-2 last:border-b-0 last:pb-0"
+                      >
                         <div>
                           <p className="font-medium">
                             {item.operator?.firstname} {item.operator?.lastname}
                           </p>
-                          <p className="text-sm text-gray-500">{item.operator?.phoneNumber}</p>
+                          <p className="text-sm text-gray-500">
+                            {item.operator?.phoneNumber}
+                          </p>
                         </div>
-                        <Badge variant="secondary">{item.operator?.position}</Badge>
+                        <Badge variant="secondary">
+                          {item.operator?.position}
+                        </Badge>
                       </div>
                     ))
                   ) : (
@@ -441,10 +523,95 @@ export function BreakerManagementTable() {
             <Button
               type="button"
               variant="secondary"
-              className="border-gray-800 focus:ring-gray300/10"
+              className="focus:ring-gray300/10 border-gray-800"
               onClick={() => setViewDetails({ isOpen: false, breaker: null })}
             >
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={editDialog.isOpen}
+        onOpenChange={(open) => {
+          if (!open) setEditDialog({ isOpen: false, breaker: null });
+        }}
+      >
+        <DialogContent className="w-full bg-white">
+          <DialogHeader>
+            <DialogTitle>Edit Breaker</DialogTitle>
+            <DialogDescription>
+              Update the details for breaker: {editDialog.breaker?.sbcId}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Name</Label>
+              <Input
+                id="edit-name"
+                value={editForm.name}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, name: e.target.value }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-street">Street Name</Label>
+              <Input
+                id="edit-street"
+                value={editForm.streetName}
+                onChange={(e) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    streetName: e.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-city">City</Label>
+              <Input
+                id="edit-city"
+                value={editForm.city}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, city: e.target.value }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-state">State</Label>
+              <Input
+                id="edit-state"
+                value={editForm.state}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, state: e.target.value }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-asset">Asset ID</Label>
+              <Input
+                id="edit-asset"
+                value={editForm.assetId}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, assetId: e.target.value }))
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditDialog({ isOpen: false, breaker: null })}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEditSubmit}
+              disabled={editMutation.isPending}
+            >
+              {editMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>

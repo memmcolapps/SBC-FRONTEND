@@ -44,19 +44,38 @@ export type AssignBreakersPayload = {
   sbcIds: string[];
 };
 
+export type EditBreakerPayload = {
+  id: string;
+  sbcId?: string;
+  state?: string;
+  name?: string;
+  breakerCount?: number;
+  city?: string;
+  streetName?: string;
+  assetId?: string;
+};
+
+export type EditBreakerResult =
+  | { success: true; data: unknown }
+  | { success: false; error: string };
+
 export const changeBreakerState = async (
   data: {
     id: string;
     status: boolean;
   },
-  token: string
+  token: string,
 ) => {
-  const response = await axios.patch(`${API_BASE_URL}/v1/api/breaker/service/change-state`, {}, {
-    headers: {
-      Authorization: `Bearer ${token}`,
+  const response = await axios.patch(
+    `${API_BASE_URL}/v1/api/breaker/service/change-state`,
+    {},
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      params: data,
     },
-    params: data,
-  });
+  );
   return response.data;
 };
 
@@ -156,7 +175,9 @@ export const assignBreakers = async (
   token: string,
 ): Promise<void> => {
   try {
-    const baseUrl = API_BASE_URL.endsWith("/") ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+    const baseUrl = API_BASE_URL.endsWith("/")
+      ? API_BASE_URL.slice(0, -1)
+      : API_BASE_URL;
 
     const response = await axios.put(
       `${API_BASE_URL}/v1/api/breaker/service/assign`,
@@ -173,16 +194,19 @@ export const assignBreakers = async (
 
     // Check for success code
     if (apiResponse.responsecode !== "000") {
-      throw new Error(apiResponse.responsedesc || "Unexpected response code from backend.");
+      throw new Error(
+        apiResponse.responsedesc || "Unexpected response code from backend.",
+      );
     }
 
     // Check if there were any failures in the assignment process
     if (apiResponse.responsedata?.failures?.length > 0) {
       // Create a more detailed error message for the user
       const failureMessage = apiResponse.responsedata.failures.join(", ");
-      throw new Error(`Assignment partially failed. Details: ${failureMessage}`);
+      throw new Error(
+        `Assignment partially failed. Details: ${failureMessage}`,
+      );
     }
-
   } catch (error: unknown) {
     console.error("Assign Breakers Error:", error);
 
@@ -196,5 +220,40 @@ export const assignBreakers = async (
     }
 
     throw new Error(handleApiError(error));
+  }
+};
+
+export const editBreaker = async (
+  payload: EditBreakerPayload,
+  token: string,
+): Promise<EditBreakerResult> => {
+  try {
+    const response = await axios.patch(
+      `${API_BASE_URL}/v1/api/breaker/service/update`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    if (response.data.responsecode !== "000") {
+      return {
+        success: false,
+        error: response.data.responsedesc || "Failed to update breaker",
+      };
+    }
+
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error: unknown) {
+    return {
+      success: false,
+      error: handleApiError(error),
+    };
   }
 };
