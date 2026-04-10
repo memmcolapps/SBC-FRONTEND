@@ -6,7 +6,9 @@
   "scripts": {
     "build": "next build",
     "check": "next lint && tsc --noEmit",
-    "dev": "next dev --turbo",
+    "dev": "concurrently \"next dev --turbo\" \"node mqtt-bridge/server.mjs\"",
+    "dev:next": "next dev --turbo",
+    "dev:bridge": "node mqtt-bridge/server.mjs",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "preview": "next build && next start",
@@ -36,6 +38,7 @@
     "date-fns": "^4.1.0",
     "geist": "^1.3.0",
     "lucide-react": "^0.475.0",
+    "mqtt": "^5.15.1",
     "next": "^16.0.10",
     "next-themes": "^0.4.4",
     "react": "^18.3.1",
@@ -45,6 +48,7 @@
     "sonner": "^2.0.1",
     "tailwind-merge": "^3.0.2",
     "tailwindcss-animate": "^1.0.7",
+    "ws": "^8.20.0",
     "zod": "^3.23.3"
   },
   "devDependencies": {
@@ -52,8 +56,10 @@
     "@types/node": "^20.14.10",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^8.1.0",
     "@typescript-eslint/parser": "^8.1.0",
+    "concurrently": "^9.2.1",
     "eslint": "^8.57.0",
     "eslint-config-next": "^16.0.10",
     "postcss": "^8.4.39",

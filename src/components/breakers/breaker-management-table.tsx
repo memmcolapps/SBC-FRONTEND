@@ -15,10 +15,11 @@ import {
   useChangeBreakerState,
   useEditBreaker,
 } from "@/hooks/use-breakers";
+import { useMqttBreakers } from "@/hooks/use-mqtt-breakers";
 import { Skeleton } from "@/components/ui/skeleton";
 import { type Breaker } from "@/types/breakers";
 import React from "react";
-import { Loader2, MoreVertical } from "lucide-react";
+import { Loader2, MoreVertical, Wifi, WifiOff } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,8 +46,6 @@ import {
 } from "@/components/ui/card";
 
 interface ExpandedBreaker extends Omit<Breaker, "status"> {
-  isExpanded: boolean;
-  buttons: Record<string, boolean>;
   lastAction?: string;
   status: "ACTIVE" | "INACTIVE";
 }
@@ -65,6 +64,36 @@ export function BreakerManagementTable() {
   });
   const changeStateMutation = useChangeBreakerState();
   const editMutation = useEditBreaker();
+
+  const uniqueBreakers = useMemo(() => {
+    const map = new Map<string, Breaker>();
+    data.forEach((breaker) => {
+      if (!map.has(breaker.sbcId)) {
+        map.set(breaker.sbcId, breaker);
+      }
+    });
+    return Array.from(map.values());
+  }, [data]);
+
+  const {
+    breakerStatuses,
+    systemStatuses,
+    controlBreaker,
+    isConnected: mqttConnected,
+  } = useMqttBreakers(uniqueBreakers);
+
+  const breakers = useMemo(() => {
+    return uniqueBreakers.map((breaker) => {
+      const localData = localModifications[breaker.sbcId] ?? {};
+      const apiStatus = breaker.status ? "ACTIVE" : "INACTIVE";
+      const currentStatus = localData.status ?? apiStatus;
+      return {
+        ...breaker,
+        status: currentStatus,
+        lastAction: localData.lastAction ?? "No recent actions",
+      };
+    });
+  }, [uniqueBreakers, localModifications]);
 
   const [dialogState, setDialogState] = useState<{
     isOpen: boolean;
@@ -100,35 +129,6 @@ export function BreakerManagementTable() {
     assetId: "",
   });
 
-  const breakers = useMemo(() => {
-    const uniqueBreakers = new Map<string, Breaker>();
-    data.forEach((breaker) => {
-      if (!uniqueBreakers.has(breaker.sbcId)) {
-        uniqueBreakers.set(breaker.sbcId, breaker);
-      }
-    });
-
-    return Array.from(uniqueBreakers.values()).map((breaker) => {
-      const localData = localModifications[breaker.sbcId] ?? {};
-      const apiStatus = breaker.status ? "ACTIVE" : "INACTIVE";
-      const currentStatus = localData.status ?? apiStatus;
-      return {
-        ...breaker,
-        isExpanded: localData.isExpanded ?? false,
-        status: currentStatus,
-        lastAction: localData.lastAction ?? "No recent actions",
-        buttons: localData.buttons ?? {
-          B1: currentStatus === "ACTIVE",
-          B2: currentStatus === "ACTIVE",
-          B3: currentStatus === "ACTIVE",
-          B4: currentStatus === "ACTIVE",
-          B5: breaker.breakerCount > 4,
-          B6: breaker.breakerCount > 5,
-        },
-      };
-    });
-  }, [data, localModifications]);
-
   const handleViewDetails = (breaker: ExpandedBreaker) => {
     setViewDetails({ isOpen: true, breaker });
   };
@@ -160,26 +160,10 @@ export function BreakerManagementTable() {
     );
   };
 
-  const toggleButton = (sbcId: string, buttonId: string) => {
-    setLocalModifications((prev) => {
-      const current = prev[sbcId] ?? {};
-      const newButtonState = !(current.buttons?.[buttonId] ?? false);
-
-      return {
-        ...prev,
-        [sbcId]: {
-          ...current,
-          status: newButtonState ? "ACTIVE" : "INACTIVE",
-          lastAction: `Button ${buttonId} turned ${
-            newButtonState ? "ON" : "OFF"
-          } (just now)`,
-          buttons: {
-            ...(current.buttons ?? {}),
-            [buttonId]: newButtonState,
-          },
-        },
-      };
-    });
+  const toggleBreaker = (sbcId: string, breakerNumber: number) => {
+    const currentStatus = breakerStatuses[sbcId]?.[breakerNumber];
+    const command = currentStatus === "ON" ? "OFF" : "ON";
+    controlBreaker(sbcId, breakerNumber, command);
   };
 
   const handleActionClick = (
@@ -205,32 +189,14 @@ export function BreakerManagementTable() {
       { id: breaker.id, status: newState },
       {
         onSuccess: () => {
-          setLocalModifications((prev) => {
-            const breakerData = breakers.find((b) => b.sbcId === breakerId);
-            return {
-              ...prev,
-              [breakerId]: {
-                ...prev[breakerId],
-                status: newState ? "ACTIVE" : "INACTIVE",
-                lastAction: newState ? "Activated" : "Deactivated",
-                buttons: newState
-                  ? {
-                      ...(breakerData?.buttons ?? {}),
-                      B1: true,
-                      B2: true,
-                      B3: true,
-                      B4: true,
-                    }
-                  : {
-                      ...(breakerData?.buttons ?? {}),
-                      B1: false,
-                      B2: false,
-                      B3: false,
-                      B4: false,
-                    },
-              },
-            };
-          });
+          setLocalModifications((prev) => ({
+            ...prev,
+            [breakerId]: {
+              ...prev[breakerId],
+              status: newState ? "ACTIVE" : "INACTIVE",
+              lastAction: newState ? "Activated" : "Deactivated",
+            },
+          }));
           setDialogState({ isOpen: false, breakerId: null, action: null });
         },
         onError: () => {
@@ -268,6 +234,20 @@ export function BreakerManagementTable() {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center gap-2 text-xs">
+        {mqttConnected ? (
+          <span className="flex items-center gap-1 text-green-600">
+            <Wifi className="h-3.5 w-3.5" />
+            MQTT Connected
+          </span>
+        ) : (
+          <span className="flex items-center gap-1 text-red-500">
+            <WifiOff className="h-3.5 w-3.5" />
+            MQTT Disconnected
+          </span>
+        )}
+      </div>
+
       <div className="rounded-lg border border-gray-200">
         <Table>
           <TableHeader>
@@ -283,102 +263,152 @@ export function BreakerManagementTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {breakers.map((breaker) => (
-              <React.Fragment key={breaker.sbcId}>
-                <TableRow
-                  className={`cursor-pointer ${
-                    breaker.status === "INACTIVE"
-                      ? "bg-gray-50 text-gray-400"
-                      : "hover:bg-gray-50/50"
-                  }`}
-                  onClick={() => handleViewDetails(breaker)}
-                >
-                  <TableCell className="font-medium">{breaker.sbcId}</TableCell>
-                  <TableCell className="text-gray-600">{breaker.assetId}</TableCell>
-                  <TableCell>{breaker.name}</TableCell>
-                  <TableCell className="text-gray-600">
-                    {breaker.city}, {breaker.state}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={
-                        breaker.status === "ACTIVE"
-                          ? "border-green-200 bg-green-50 text-green-700"
-                          : "border-red-200 bg-red-50 text-red-700"
-                      }
-                    >
-                      {breaker.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-gray-600">{breaker.breakerCount}</TableCell>
-                  <TableCell className="text-gray-500">
-                    {new Date(breaker.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu modal={false}>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {breaker.status === "ACTIVE" ? (
-                          <>
+            {breakers.map((breaker) => {
+              const sbcStatus = systemStatuses[breaker.sbcId];
+              const individualStatuses = breakerStatuses[breaker.sbcId] ?? {};
+
+              return (
+                <React.Fragment key={breaker.sbcId}>
+                  <TableRow
+                    className={`cursor-pointer ${
+                      breaker.status === "INACTIVE"
+                        ? "bg-gray-50 text-gray-400"
+                        : "hover:bg-gray-50/50"
+                    }`}
+                    onClick={() => handleViewDetails(breaker)}
+                  >
+                    <TableCell className="font-medium">
+                      {breaker.sbcId}
+                    </TableCell>
+                    <TableCell className="text-gray-600">
+                      {breaker.assetId}
+                    </TableCell>
+                    <TableCell>{breaker.name}</TableCell>
+                    <TableCell className="text-gray-600">
+                      {breaker.city}, {breaker.state}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <Badge
+                          variant="outline"
+                          className={
+                            breaker.status === "ACTIVE"
+                              ? "border-green-200 bg-green-50 text-green-700"
+                              : "border-red-200 bg-red-50 text-red-700"
+                          }
+                        >
+                          {breaker.status}
+                        </Badge>
+                        {sbcStatus && (
+                          <span
+                            className={`h-2 w-2 rounded-full ${
+                              sbcStatus === "ONLINE"
+                                ? "bg-green-500"
+                                : sbcStatus === "OFFLINE"
+                                  ? "bg-red-500"
+                                  : "bg-gray-400"
+                            }`}
+                            title={`SBC ${sbcStatus}`}
+                          />
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-gray-600">
+                      {breaker.breakerCount}
+                    </TableCell>
+                    <TableCell className="text-gray-500">
+                      {new Date(breaker.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {breaker.status === "ACTIVE" ? (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleActionClick(breaker.sbcId, "deactivate")
+                                }
+                              >
+                                Deactivate
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleEditClick(breaker)}
+                              >
+                                Edit
+                              </DropdownMenuItem>
+                            </>
+                          ) : (
                             <DropdownMenuItem
                               onClick={() =>
-                                handleActionClick(breaker.sbcId, "deactivate")
+                                handleActionClick(breaker.sbcId, "activate")
                               }
                             >
-                              Deactivate
+                              Activate
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleEditClick(breaker)}
-                            >
-                              Edit
-                            </DropdownMenuItem>
-                          </>
-                        ) : (
-                          <DropdownMenuItem
-                            onClick={() =>
-                              handleActionClick(breaker.sbcId, "activate")
-                            }
-                          >
-                            Activate
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-                {breaker.isExpanded && (
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
                   <TableRow className="bg-gray-50">
                     <TableCell colSpan={8}>
-                      <div className="flex justify-end gap-2 p-2">
-                        {Object.entries(breaker.buttons)
-                          .filter(([_, show]) => show)
-                          .map(([btnId, isActive]) => (
-                            <Button
-                              key={btnId}
-                              variant={isActive ? "default" : "outline"}
-                              size="sm"
-                              className={
-                                isActive
-                                  ? "bg-green-600 hover:bg-green-700"
-                                  : "hover:bg-gray-200"
-                              }
-                              onClick={() => toggleButton(breaker.sbcId, btnId)}
-                              disabled={breaker.status === "INACTIVE"}
-                            >
-                              {btnId}
-                            </Button>
-                          ))}
+                      <div className="flex items-center justify-end gap-2 p-2">
+                        {Array.from(
+                          { length: breaker.breakerCount },
+                          (_, i) => {
+                            const breakerNum = i + 1;
+                            const status = individualStatuses[breakerNum];
+                            const isOn = status === "ON";
+                            const isUnknown =
+                              status === "UNKNOWN" || status === undefined;
+                            const isDisabled =
+                              breaker.status === "INACTIVE" || !mqttConnected;
+
+                            return (
+                              <Button
+                                key={breakerNum}
+                                variant={isOn ? "default" : "outline"}
+                                size="sm"
+                                className={
+                                  isOn
+                                    ? "bg-green-600 hover:bg-green-700"
+                                    : isUnknown
+                                      ? "border-gray-300 bg-gray-100 text-gray-500 hover:bg-gray-200"
+                                      : "hover:bg-gray-200"
+                                }
+                                onClick={() =>
+                                  toggleBreaker(breaker.sbcId, breakerNum)
+                                }
+                                disabled={isDisabled}
+                                title={
+                                  isUnknown
+                                    ? `Breaker ${breakerNum}: Waiting for status...`
+                                    : `Breaker ${breakerNum}: ${isOn ? "ON" : "OFF"} — Click to toggle`
+                                }
+                              >
+                                B{breakerNum}
+                                {isUnknown && (
+                                  <Loader2 className="ml-1 h-3 w-3 animate-spin" />
+                                )}
+                              </Button>
+                            );
+                          },
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
-                )}
-              </React.Fragment>
-            ))}
+                </React.Fragment>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
@@ -390,7 +420,7 @@ export function BreakerManagementTable() {
           setDialogState({ isOpen: false, breakerId: null, action: null })
         }
       >
-        <DialogContent className="sm:max-w-[400px] bg-white">
+        <DialogContent className="bg-white sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle>Confirm Action</DialogTitle>
             <DialogDescription>
@@ -433,7 +463,7 @@ export function BreakerManagementTable() {
         open={viewDetails.isOpen}
         onOpenChange={() => setViewDetails({ isOpen: false, breaker: null })}
       >
-        <DialogContent className="sm:max-w-[500px] bg-white">
+        <DialogContent className="bg-white sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Breaker Details</DialogTitle>
             <DialogDescription>
@@ -444,7 +474,9 @@ export function BreakerManagementTable() {
           <div className="space-y-4 py-2">
             <Card className="border-gray-200">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">{viewDetails.breaker?.sbcId}</CardTitle>
+                <CardTitle className="text-base">
+                  {viewDetails.breaker?.sbcId}
+                </CardTitle>
                 <CardDescription>
                   Asset ID: {viewDetails.breaker?.assetId}
                 </CardDescription>
@@ -459,16 +491,33 @@ export function BreakerManagementTable() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-500">Status</span>
-                  <Badge
-                    variant="outline"
-                    className={
-                      viewDetails.breaker?.status === "ACTIVE"
-                        ? "border-green-200 bg-green-50 text-green-700"
-                        : "border-red-200 bg-red-50 text-red-700"
-                    }
-                  >
-                    {viewDetails.breaker?.status}
-                  </Badge>
+                  <div className="flex items-center gap-1.5">
+                    <Badge
+                      variant="outline"
+                      className={
+                        viewDetails.breaker?.status === "ACTIVE"
+                          ? "border-green-200 bg-green-50 text-green-700"
+                          : "border-red-200 bg-red-50 text-red-700"
+                      }
+                    >
+                      {viewDetails.breaker?.status}
+                    </Badge>
+                    {viewDetails.breaker?.sbcId &&
+                      systemStatuses[viewDetails.breaker.sbcId] && (
+                        <span
+                          className={`h-2 w-2 rounded-full ${
+                            systemStatuses[viewDetails.breaker.sbcId] ===
+                            "ONLINE"
+                              ? "bg-green-500"
+                              : systemStatuses[viewDetails.breaker.sbcId] ===
+                                  "OFFLINE"
+                                ? "bg-red-500"
+                                : "bg-gray-400"
+                          }`}
+                          title={`SBC ${systemStatuses[viewDetails.breaker.sbcId]}`}
+                        />
+                      )}
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-500">Breaker Count</span>
@@ -478,10 +527,47 @@ export function BreakerManagementTable() {
                   <span className="text-gray-500">Date Added</span>
                   <span>
                     {viewDetails.breaker?.createdAt
-                      ? new Date(viewDetails.breaker.createdAt).toLocaleDateString()
+                      ? new Date(
+                          viewDetails.breaker.createdAt,
+                        ).toLocaleDateString()
                       : "N/A"}
                   </span>
                 </div>
+                {viewDetails.breaker?.sbcId &&
+                  breakerStatuses[viewDetails.breaker.sbcId] && (
+                    <div className="border-t border-gray-100 pt-3">
+                      <span className="text-xs font-medium uppercase tracking-wider text-gray-500">
+                        Breaker Status (Live)
+                      </span>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {Array.from(
+                          { length: viewDetails.breaker.breakerCount },
+                          (_, i) => {
+                            const num = i + 1;
+                            const status =
+                              breakerStatuses[viewDetails.breaker!.sbcId]?.[
+                                num
+                              ];
+                            return (
+                              <Badge
+                                key={num}
+                                variant="outline"
+                                className={
+                                  status === "ON"
+                                    ? "border-green-200 bg-green-50 text-green-700"
+                                    : status === "OFF"
+                                      ? "border-red-200 bg-red-50 text-red-700"
+                                      : "border-gray-200 bg-gray-50 text-gray-500"
+                                }
+                              >
+                                B{num}: {status ?? "—"}
+                              </Badge>
+                            );
+                          },
+                        )}
+                      </div>
+                    </div>
+                  )}
               </CardContent>
             </Card>
 
@@ -515,7 +601,9 @@ export function BreakerManagementTable() {
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-gray-500">No operators assigned.</p>
+                    <p className="text-sm text-gray-500">
+                      No operators assigned.
+                    </p>
                   )}
                 </div>
               </CardContent>
@@ -539,7 +627,7 @@ export function BreakerManagementTable() {
           if (!open) setEditDialog({ isOpen: false, breaker: null });
         }}
       >
-        <DialogContent className="sm:max-w-[480px] bg-white">
+        <DialogContent className="bg-white sm:max-w-[480px]">
           <DialogHeader>
             <DialogTitle>Edit Breaker</DialogTitle>
             <DialogDescription>
@@ -548,7 +636,9 @@ export function BreakerManagementTable() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label htmlFor="edit-name" className="text-sm text-gray-600">Name</Label>
+              <Label htmlFor="edit-name" className="text-sm text-gray-600">
+                Name
+              </Label>
               <Input
                 id="edit-name"
                 value={editForm.name}
@@ -560,7 +650,9 @@ export function BreakerManagementTable() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="edit-city" className="text-sm text-gray-600">City</Label>
+                <Label htmlFor="edit-city" className="text-sm text-gray-600">
+                  City
+                </Label>
                 <Input
                   id="edit-city"
                   value={editForm.city}
@@ -571,7 +663,9 @@ export function BreakerManagementTable() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="edit-state" className="text-sm text-gray-600">State</Label>
+                <Label htmlFor="edit-state" className="text-sm text-gray-600">
+                  State
+                </Label>
                 <Input
                   id="edit-state"
                   value={editForm.state}
@@ -583,7 +677,9 @@ export function BreakerManagementTable() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="edit-street" className="text-sm text-gray-600">Street Name</Label>
+              <Label htmlFor="edit-street" className="text-sm text-gray-600">
+                Street Name
+              </Label>
               <Input
                 id="edit-street"
                 value={editForm.streetName}
@@ -597,7 +693,9 @@ export function BreakerManagementTable() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="edit-asset" className="text-sm text-gray-600">Asset ID</Label>
+              <Label htmlFor="edit-asset" className="text-sm text-gray-600">
+                Asset ID
+              </Label>
               <Input
                 id="edit-asset"
                 value={editForm.assetId}
