@@ -9,7 +9,7 @@ const wss = new WebSocketServer({ port: MQTT_WS_PORT });
 
 let mqttClient = null;
 const activeSubscriptions = new Set();
-const wsClients = new Set();
+const wssClients = new Set();
 
 function connectMqtt() {
   mqttClient = mqtt.connect(MQTT_BROKER_URL, {
@@ -99,6 +99,7 @@ wss.on("connection", (ws) => {
 
         case "publish": {
           const { topic, message } = data;
+          console.log("[WS] Publish request:", topic, message);
           if (mqttClient && mqttClient.connected) {
             mqttClient.publish(topic, message, { qos: 0 }, (err) => {
               if (err) console.error("[MQTT] Publish error:", err.message);

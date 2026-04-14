@@ -71,9 +71,11 @@ export function useMqttBreakers(breakers: Breaker[]): MqttBreakerState {
       newBreakerStatuses[sbcId] = {};
 
       if (breaker.subscribeTopic?.sbcTopic) {
+        const fullSbcTopic = `${sbcId}/${breaker.subscribeTopic.sbcTopic}`;
         const unsub = mqttService.subscribe(
-          breaker.subscribeTopic.sbcTopic,
+          fullSbcTopic,
           (topic, message) => {
+            console.log(`[MQTT][${sbcId}] SBC system topic="${topic}" message="${message}"`);
             setSystemStatuses((prev) => ({
               ...prev,
               [sbcId]:
@@ -90,12 +92,14 @@ export function useMqttBreakers(breakers: Breaker[]): MqttBreakerState {
 
       for (let i = 1; i <= breaker.breakerCount; i++) {
         const field = getBreakerTopicField(i);
-        const topic = breaker.subscribeTopic?.[field];
+        const rawTopic = breaker.subscribeTopic?.[field];
 
-        if (topic) {
+        if (rawTopic) {
+          const topic = `${sbcId}/${rawTopic}`;
           newBreakerStatuses[sbcId][i] = "UNKNOWN";
           const breakerNum = i;
           const unsub = mqttService.subscribe(topic, (_, message) => {
+            console.log(`[MQTT][${sbcId}] Breaker ${breakerNum} topic="${topic}" message="${message}"`);
             setBreakerStatuses((prev) => ({
               ...prev,
               [sbcId]: {
@@ -131,8 +135,10 @@ export function useMqttBreakers(breakers: Breaker[]): MqttBreakerState {
       if (!breaker?.publishTopic) return;
 
       const field = getBreakerTopicField(breakerNumber);
-      const topic = breaker.publishTopic[field];
-      if (!topic) return;
+      const rawTopic = breaker.publishTopic[field];
+      if (!rawTopic) return;
+
+      const topic = `${sbcId}/${rawTopic}`;
 
       setBreakerStatuses((prev) => ({
         ...prev,
